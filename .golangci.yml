@@ -1,0 +1,31 @@
+version: "2"
+linters:
+  enable:
+    - bodyclose
+    - errorlint
+    - gosec
+    - misspell
+    - revive
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - (*text/tabwriter.Writer).Flush
+        - (io.Closer).Close
+        - (*os.File).Close
+        - os.Remove
+        - (net/http.ResponseWriter).Write
+    gosec:
+      excludes:
+        - G104 # covered by errcheck, which has the exclusions above
+        - G204 # launching the browser/editor with user-chosen args is intended
+        - G301 # config dirs are not secret
+        - G304 # reading files from user-configured paths is intended
+        - G306 # links.yaml is not secret; 0644 is fine
+        - G702 # same as G204, via taint analysis
+        - G710 # redirecting is the product; destinations are validated http(s) URLs from the links file
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters: [gosec, errcheck]

@@ -1,0 +1,66 @@
+{{define "head"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.}} · goli</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23e8590c'/></svg>">
+<style>
+:root{--bg:#fbfaf8;--fg:#1d1b18;--muted:#6f6a63;--line:#e7e3dd;--card:#fff;--accent:#e8590c;--accent-fg:#fff;--ok:#2b8a3e;--warn:#b35c00}
+@media (prefers-color-scheme:dark){:root{--bg:#141311;--fg:#ece9e4;--muted:#9a948b;--line:#2c2a26;--card:#1c1b18;--accent:#ff7a2e;--accent-fg:#141311;--ok:#69db7c;--warn:#ffa94d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:860px;margin:0 auto;padding:32px 16px 64px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+header{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.logo{font-weight:800;font-size:22px;letter-spacing:-.5px;color:var(--fg)}
+.logo b{color:var(--accent)}
+.muted{color:var(--muted)}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
+form.search{display:flex;gap:8px;margin:0 0 24px}
+input,button{font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:9px 12px}
+input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+input[type=search]{flex:1;min-width:0}
+button{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);cursor:pointer;font-weight:600}
+button.ghost{background:none;color:var(--muted);border-color:var(--line);font-weight:400;padding:4px 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+table{width:100%;border-collapse:collapse}
+td{padding:8px 6px;border-top:1px solid var(--line);vertical-align:top}
+td.key{white-space:nowrap;font-weight:600}
+td.url{word-break:break-all;color:var(--muted);font-size:.9em}
+.tag{display:inline-block;font-size:.75em;border:1px solid var(--line);border-radius:99px;padding:0 7px;margin-left:4px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid input{width:100%}
+.grid .wide{grid-column:1/-1}
+.result{display:block;padding:10px 0;border-top:1px solid var(--line);color:var(--fg)}
+.result:hover{text-decoration:none;background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.result .k{font-weight:600;color:var(--accent)}
+.bar{height:4px;background:var(--line);border-radius:2px;margin-top:6px;max-width:160px}
+.bar span{display:block;height:100%;background:var(--accent);border-radius:2px}
+.notice{border-left:3px solid var(--ok);padding:6px 12px;margin-bottom:16px}
+.notice.warn{border-color:var(--warn)}
+@media (max-width:600px){.grid{grid-template-columns:1fr}td.url{display:none}}
+</style>
+</head>
+<body><main>
+<header><a class="logo" href="/">go<b>li</b></a><span class="muted">your short links</span></header>
+{{end}}
+
+{{define "foot"}}</main></body></html>{{end}}
+
+{{define "searchbox"}}
+<form class="search" action="/_/search" method="get">
+  <input type="search" name="q" value="{{.}}" placeholder="Search links, or describe what you need…" autofocus>
+  <button type="submit">Search</button>
+</form>
+{{end}}
+
+{{define "createform"}}
+<form method="post" action="/_/links" class="grid">
+  <input name="key" value="{{.}}" placeholder="key, e.g. claude" required pattern="[a-z0-9][a-z0-9._\-]*(/[a-z0-9._\-]+)*">
+  <input name="url" type="url" placeholder="https://…" required>
+  <input name="desc" placeholder="description (helps search)">
+  <input name="tags" placeholder="tags, comma separated">
+  <div class="wide"><button type="submit">Save link</button></div>
+</form>
+{{end}}

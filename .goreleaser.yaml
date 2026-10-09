@@ -1,0 +1,24 @@
+version: 2
+project_name: goli
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - main: ./cmd/goli
+    env: [CGO_ENABLED=0]
+    goos: [darwin, linux]
+    goarch: [amd64, arm64]
+    ldflags: ["-s -w -X main.version={{.Version}}"]
+archives:
+  - formats: [tar.gz]
+    files: [LICENSE, README.md, integrations/**/*]
+checksum:
+  name_template: checksums.txt
+changelog:
+  use: github
+# When the repo goes public, uncomment to publish `brew install chetanparab/tap/goli`:
+# brews:
+#   - repository: {owner: chetanparab, name: homebrew-tap}
+#     homepage: https://github.com/chetanparab/goli
+#     description: Personal go/ links with smart search
+#     install: bin.install "goli"

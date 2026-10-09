@@ -1,0 +1,33 @@
+# Example goli links file. Copy to ~/.config/goli/links.yaml or point
+# links_file in config.yaml at a git checkout (links as code).
+
+# Short form: key -> url
+claude: https://claude.ai
+gh: https://github.com          # go/gh/owner/repo appends the path
+
+# Full form: description and tags make search work better
+roadmap:
+  url: https://docs.example.com/roadmap
+  desc: Product roadmap and quarterly plans
+  tags: [planning, docs]
+
+# Parameters: {1}, {2}… positional, {name} in order, {*} = everything after the key
+jira: https://example.atlassian.net/browse/{1}       # go/jira/ABC-123
+pr: https://github.com/{owner}/{repo}/pull/{n}        # go/pr/acme/api/42
+docs: https://docs.example.com/search?q={*}           # go/docs/rate limits
+
+# Nested keys
+team/wiki: https://wiki.example.com
+team/oncall: https://oncall.example.com/schedule
+
+# Context-aware: the first variant whose `when` matches wins, else url.
+dashboard:
+  url: https://grafana.example.com/d/prod
+  desc: Service dashboard (prod by default)
+  variants:
+    - when: {env: staging}               # goli ctx set env=staging, or go/dashboard?ctx.env=staging
+      url: https://grafana.example.com/d/staging
+    - when: {network: office}            # networks are defined in config.yaml
+      url: https://grafana.internal/d/prod
+    - when: {hours: "22-07", days: "mon-fri"}
+      url: https://oncall.example.com/now

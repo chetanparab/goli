@@ -1,0 +1,17 @@
+{{template "head" (printf "Search: %s" .Query)}}
+{{template "searchbox" .Query}}
+{{if .AIError}}<div class="notice warn">{{.AIError}}</div>{{end}}
+<div class="card">
+  <strong>{{if .UsedAI}}Best matches (AI){{else}}Matches{{end}}</strong>
+  {{range .Results}}
+    <a class="result" href="/{{.Link.Key}}">
+      <span class="k">go/{{.Link.Key}}</span> <span class="muted">{{.Link.Desc}}</span>
+      {{if .Reason}}<div style="font-size:.9em">{{.Reason}}</div>{{end}}
+      <div class="muted mono" style="font-size:.8em">{{.Link.URL}}</div>
+      <div class="bar" title="{{pct .Confidence}}% match"><span style="width:{{pct .Confidence}}%"></span></div>
+    </a>
+  {{else}}
+    <p class="muted">Nothing matched “{{.Query}}”.</p>
+  {{end}}
+</div>
+{{template "foot"}}

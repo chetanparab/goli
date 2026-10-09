@@ -1,0 +1,26 @@
+{{template "head" (printf "go/%s" .Key)}}
+{{if .Missing}}
+  <h1>go/{{.Key}} needs more</h1>
+  <p>This link is a template: <code>{{.Missing.Link.URL}}</code></p>
+  <p class="muted">Add the missing part{{if gt (len .Missing.Need) 1}}s{{end}} to the path, e.g. <code>go/{{.Key}}/{{range $i, $n := .Missing.Need}}{{if $i}}/{{end}}&lt;{{$n}}&gt;{{end}}</code></p>
+{{else}}
+  <h1>go/{{.Key}} doesn't exist yet</h1>
+  {{if .Suggestions}}
+  <div class="card">
+    <strong>Did you mean</strong>
+    {{range .Suggestions}}
+      <a class="result" href="/{{.Link.Key}}"><span class="k">go/{{.Link.Key}}</span> <span class="muted">{{.Link.Desc}}</span>
+        <div class="muted mono" style="font-size:.8em">{{.Link.URL}}</div></a>
+    {{end}}
+  </div>
+  {{end}}
+  {{if .KeyValid}}
+  <div class="card">
+    <strong>Create go/{{.Key}}</strong>
+    <p></p>
+    {{template "createform" .Key}}
+  </div>
+  {{end}}
+  {{template "searchbox" .Key}}
+{{end}}
+{{template "foot"}}

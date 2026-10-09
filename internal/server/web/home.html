@@ -1,0 +1,28 @@
+{{template "head" "Home"}}
+{{template "searchbox" ""}}
+
+<div class="card">
+  <strong>New link</strong>
+  <p class="muted" style="margin:4px 0 12px">Use <code>{1}</code>, <code>{id}</code> or <code>{*}</code> in the URL for parameters, e.g. <code>go/pr/123</code>.</p>
+  {{template "createform" ""}}
+</div>
+
+<div class="card">
+  <strong>{{len .Links}} links</strong>
+  {{if .AI}}<span class="muted"> · try <code>go/?what you're looking for</code></span>{{end}}
+  <table>
+  {{range .Links}}
+    <tr>
+      <td class="key"><a href="/{{.Key}}">{{.Key}}</a></td>
+      <td>{{.Desc}}{{range .Tags}}<span class="tag">{{.}}</span>{{end}}{{if .Variants}}<span class="tag">context-aware</span>{{end}}</td>
+      <td class="url">{{.URL}}</td>
+      <td><form method="post" action="/_/links/delete" onsubmit="return confirm('Delete go/{{.Key}}?')">
+          <input type="hidden" name="key" value="{{.Key}}"><button class="ghost" title="Delete">×</button>
+        </form></td>
+    </tr>
+  {{else}}
+    <tr><td class="muted">No links yet. Add one above, or run <code>goli add claude https://claude.ai</code>.</td></tr>
+  {{end}}
+  </table>
+</div>
+{{template "foot"}}
