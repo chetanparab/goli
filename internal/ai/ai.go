@@ -1,37 +1,51 @@
-// Package ai asks Claude which links best answer a natural-language query,
-// e.g. go/?the doc with our q3 plans.
+// Package ai ranks links for a natural-language query, e.g. go/?the doc with our q3 plans.
+//
+// Two engines are available:
+//
+//	claude-code  runs the local `claude` CLI, using its existing login (a Claude subscription)
+//	anthropic    calls the Claude API (ANTHROPIC_API_KEY or an `ant auth login` profile)
 package ai
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
-	"github.com/anthropics/anthropic-sdk-go"
-	"github.com/anthropics/anthropic-sdk-go/option"
-
+	"github.com/chetanparab/goli/internal/config"
 	"github.com/chetanparab/goli/internal/links"
 )
 
-// Pick is one link Claude chose for the query.
+// Pick is one link the model chose for the query.
 type Pick struct {
 	Key        string  `json:"key"`
 	Confidence float64 `json:"confidence"`
 	Reason     string  `json:"reason"`
 }
 
-// Ranker ranks links with Claude.
-type Ranker struct {
-	client anthropic.Client
-	model  string
+// Ranker ranks links for a query.
+type Ranker interface {
+	Rank(ctx context.Context, query string, all []*links.Link) ([]Pick, error)
 }
 
-// New returns a Ranker. Credentials come from ANTHROPIC_API_KEY or an
-// `ant auth login` profile, resolved by the SDK.
-func New(model string) *Ranker {
-	return &Ranker{client: anthropic.NewClient(option.WithMaxRetries(1)), model: model}
+// Provider names accepted in config.yaml.
+const (
+	ProviderClaudeCode = "claude-code"
+	ProviderAnthropic  = "anthropic"
+)
+
+// New returns the configured Ranker, or nil if AI search is disabled.
+func New(cfg config.AI) (Ranker, error) {
+	if !cfg.Enabled {
+		return nil, nil
+	}
+	switch cfg.Provider {
+	case "", ProviderClaudeCode:
+		return NewClaudeCode(cfg.ClaudeBin, cfg.Model), nil
+	case ProviderAnthropic:
+		return NewAPI(cfg.Model), nil
+	default:
+		return nil, fmt.Errorf("unknown ai.provider %q (use %q or %q)", cfg.Provider, ProviderClaudeCode, ProviderAnthropic)
+	}
 }
 
 const systemPrompt = `You are the search engine for a personal go-links service. Each line of the catalog is: key | description | tags | url.
@@ -58,61 +72,25 @@ var schema = map[string]any{
 	"additionalProperties": false,
 }
 
-// Rank returns Claude's picks for query, filtered to keys that exist.
-func (r *Ranker) Rank(ctx context.Context, query string, all []*links.Link) ([]Pick, error) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
+// catalog renders links one per line and returns the set of valid keys.
+func catalog(all []*links.Link) (string, map[string]bool) {
 	known := make(map[string]bool, len(all))
-	var catalog strings.Builder
+	var b strings.Builder
 	for _, l := range all {
 		known[l.Key] = true
-		fmt.Fprintf(&catalog, "%s | %s | %s | %s\n", l.Key, l.Desc, strings.Join(l.Tags, ","), l.URL)
+		fmt.Fprintf(&b, "%s | %s | %s | %s\n", l.Key, l.Desc, strings.Join(l.Tags, ","), l.URL)
 	}
+	return b.String(), known
+}
 
-	resp, err := r.client.Messages.New(ctx, anthropic.MessageNewParams{
-		Model:     anthropic.Model(r.model),
-		MaxTokens: 4096,
-		System: []anthropic.TextBlockParam{
-			{Text: systemPrompt},
-			{Text: "Catalog:\n" + catalog.String(), CacheControl: anthropic.NewCacheControlEphemeralParam()},
-		},
-		Messages: []anthropic.MessageParam{
-			anthropic.NewUserMessage(anthropic.NewTextBlock(query)),
-		},
-		OutputConfig: anthropic.OutputConfigParam{
-			Effort: anthropic.OutputConfigEffortLow,
-			Format: anthropic.JSONOutputFormatParam{Schema: schema},
-		},
-	},
-		// Re-serve policy declines from a fallback model chosen by the API.
-		option.WithHeaderAdd("anthropic-beta", "server-side-fallback-2026-07-01"),
-		option.WithJSONSet("fallbacks", "default"),
-	)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StopReason == anthropic.StopReasonRefusal {
-		return nil, fmt.Errorf("claude declined the query")
-	}
-	var text string
-	for _, b := range resp.Content {
-		if t, ok := b.AsAny().(anthropic.TextBlock); ok {
-			text += t.Text
-		}
-	}
-	var out struct {
-		Matches []Pick `json:"matches"`
-	}
-	if err := json.Unmarshal([]byte(text), &out); err != nil {
-		return nil, fmt.Errorf("parse claude response: %w", err)
-	}
-	picks := out.Matches[:0]
-	for _, p := range out.Matches {
+// keepKnown drops picks whose key isn't in the catalog.
+func keepKnown(picks []Pick, known map[string]bool) []Pick {
+	out := picks[:0]
+	for _, p := range picks {
 		p.Key = links.NormalizeKey(p.Key)
 		if known[p.Key] {
-			picks = append(picks, p)
+			out = append(out, p)
 		}
 	}
-	return picks, nil
+	return out
 }

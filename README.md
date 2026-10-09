@@ -19,7 +19,7 @@ go/dashboard              → staging or prod, depending on your context
 |---|---|
 | **Links as code** | One readable `links.yaml`. Keep it in git, review changes in PRs, and run `goli check` to catch dead links. Edits made from the UI or CLI keep your comments and ordering. |
 | **Smart fallback** | A typo or unknown key shows the closest matches and a form to create the link right there. |
-| **Semantic search** | `go/?words` asks Claude which link you mean and jumps straight there when it's sure. Without an API key, it falls back to fast local fuzzy search. |
+| **Semantic search** | `go/?words` asks Claude (via your Claude Code login, or the API) which link you mean and jumps straight there when it's sure. Without AI, it falls back to fast local fuzzy search. |
 | **Parameters** | `{1}`, `{name}`, `{*}` placeholders, or just add path segments: `go/gh/owner/repo`. |
 | **Context-aware links** | One key, different destinations by environment (`goli ctx set env=staging`), network (home/office/VPN), time of day or weekday. |
 | **Terminal & launcher** | `goli claude` opens a link without the server; `goli find …` searches; a Raycast script command is included. |
@@ -118,7 +118,8 @@ hostnames: [go, localhost, 127.0.0.1]   # accepted Host headers
 # links_file: ~/code/goli-links/links.yaml
 ai:
   enabled: true
-  model: claude-opus-5-5
+  provider: claude-code                 # or: anthropic
+  # model: claude-opus-5-5
 networks:
   home:   {gateway: 192.168.1.1}          # matched by default gateway
   office: {resolves: intranet.example.com} # matched if this name resolves (VPN/office DNS)
@@ -126,9 +127,16 @@ networks:
 
 ### AI search
 
-Semantic search calls the Claude API with your link catalog (keys, descriptions, tags and URLs) and the query. Nothing else leaves your machine, and only when you search with `go/?…` or `goli find`. Redirects never call the API.
+`go/?words` and `goli find` can ask Claude which link you mean. Choose an engine with `ai.provider`:
 
-Credentials: run `ant auth login` once (this also works for the background server), or export `ANTHROPIC_API_KEY` for `goli serve` / `goli find`. Set `ai.enabled: false` to keep everything offline.
+| Provider | Uses | Setup |
+|---|---|---|
+| `claude-code` (default) | The local [Claude Code](https://claude.com/claude-code) CLI and its login, i.e. your Claude subscription. No API key. | `claude auth login` once |
+| `anthropic` | The Claude API, billed per request | `ant auth login` or `ANTHROPIC_API_KEY` |
+
+What is sent, and only on a search: your query and the link catalog (keys, descriptions, tags, URLs). Redirects never call AI. The `claude-code` engine runs the CLI with no tools, no MCP servers, no project settings and no saved session, so it can only read the catalog it's given.
+
+Set `ai.enabled: false` to keep everything offline; local fuzzy search still works, and it is also the automatic fallback whenever AI is unavailable.
 
 ## Integrations
 

@@ -250,8 +250,12 @@ func cmdFind(cfg *config.Config, store *links.Store, args []string) error {
 		return errors.New("usage: goli find <words...>")
 	}
 	all := store.All()
-	if cfg.AI.Enabled {
-		picks, err := ai.New(cfg.AI.Model).Rank(context.Background(), q, all)
+	ranker, err := ai.New(cfg.AI)
+	if err != nil {
+		return err
+	}
+	if ranker != nil {
+		picks, err := ranker.Rank(context.Background(), q, all)
 		if err == nil {
 			for _, p := range picks {
 				fmt.Printf("%3d%%  %-20s %s\n", int(p.Confidence*100), p.Key, p.Reason)
@@ -463,15 +467,24 @@ func cmdDoctor(cfg *config.Config, store *links.Store) error {
 	}
 	ok(up, "server answering on port "+port, "goli install   (or goli serve to run it in the foreground; logs: "+launchd.LogPath()+")")
 
-	home, _ := os.UserHomeDir()
-	_, profErr := os.Stat(filepath.Join(home, ".config", "anthropic"))
-	hasCreds := os.Getenv("ANTHROPIC_API_KEY") != "" || profErr == nil
 	switch {
 	case !cfg.AI.Enabled:
 		fmt.Println("· AI search disabled in config.yaml")
+	case cfg.AI.Provider == ai.ProviderAnthropic:
+		home, _ := os.UserHomeDir()
+		_, profErr := os.Stat(filepath.Join(home, ".config", "anthropic", "credentials"))
+		ok(os.Getenv("ANTHROPIC_API_KEY") != "" || profErr == nil, "Claude API credentials for AI search",
+			"run `ant auth login`, or export ANTHROPIC_API_KEY")
 	default:
-		ok(hasCreds, "Claude credentials found for AI search ("+cfg.AI.Model+")",
-			"run `ant auth login` (works for the background server too), or export ANTHROPIC_API_KEY")
+		cc := ai.NewClaudeCode(cfg.AI.ClaudeBin, cfg.AI.Model)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		in, err := cc.LoggedIn(ctx)
+		cancel()
+		msg := "claude CLI signed in for AI search"
+		if err != nil {
+			msg += " (" + err.Error() + ")"
+		}
+		ok(in, msg, "run `claude auth login` in a terminal")
 	}
 	return nil
 }

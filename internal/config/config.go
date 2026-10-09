@@ -19,8 +19,12 @@ type Network struct {
 
 // AI configures semantic lookup.
 type AI struct {
-	Enabled bool   `yaml:"enabled"`
-	Model   string `yaml:"model,omitempty"`
+	Enabled bool `yaml:"enabled"`
+	// Provider is "claude-code" (the local claude CLI and its login) or
+	// "anthropic" (the Claude API).
+	Provider  string `yaml:"provider,omitempty"`
+	Model     string `yaml:"model,omitempty"`      // empty: the provider's default
+	ClaudeBin string `yaml:"claude_bin,omitempty"` // path to the claude CLI, if not on PATH
 }
 
 // Config is the contents of config.yaml.
@@ -36,9 +40,6 @@ type Config struct {
 
 	dir string
 }
-
-// DefaultModel is the Claude model used for semantic lookup unless configured.
-const DefaultModel = "claude-opus-5-5"
 
 // Dir returns goli's config directory: $GOLI_HOME, else ~/.config/goli.
 func Dir() (string, error) {
@@ -56,7 +57,7 @@ func defaults() Config {
 	return Config{
 		Listen:    ":80",
 		Hostnames: []string{"go", "localhost", "127.0.0.1"},
-		AI:        AI{Enabled: true, Model: DefaultModel},
+		AI:        AI{Enabled: true, Provider: "claude-code"},
 	}
 }
 
@@ -84,9 +85,6 @@ func Load() (*Config, error) {
 	}
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
-	}
-	if cfg.AI.Model == "" {
-		cfg.AI.Model = DefaultModel
 	}
 	return &cfg, nil
 }
@@ -121,8 +119,11 @@ hostnames: [go, localhost, 127.0.0.1]
 # links_file: ~/code/goli-links/links.yaml
 
 ai:
-  enabled: true            # needs ANTHROPIC_API_KEY or an 'ant auth login' profile
-  model: claude-opus-5-5
+  enabled: true
+  # claude-code: runs the local claude CLI with its own login (run 'claude auth login' once)
+  # anthropic:   calls the Claude API (ANTHROPIC_API_KEY or 'ant auth login')
+  provider: claude-code
+  # model: claude-opus-5-5   # optional; defaults to the provider's default
 
 # Named networks for context-aware links (variants with when: {network: home}).
 # networks:

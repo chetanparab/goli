@@ -32,7 +32,7 @@ var tmpl = template.Must(template.New("").Funcs(template.FuncMap{
 type Server struct {
 	cfg      *config.Config
 	store    *links.Store
-	ranker   *ai.Ranker // nil when AI is disabled
+	ranker   ai.Ranker // nil when AI is disabled
 	detector *ctxinfo.Detector
 	log      *slog.Logger
 }
@@ -40,9 +40,11 @@ type Server struct {
 // New builds a Server.
 func New(cfg *config.Config, store *links.Store, log *slog.Logger) *Server {
 	s := &Server{cfg: cfg, store: store, detector: ctxinfo.NewDetector(cfg.Networks), log: log}
-	if cfg.AI.Enabled {
-		s.ranker = ai.New(cfg.AI.Model)
+	r, err := ai.New(cfg.AI)
+	if err != nil {
+		log.Error("AI search disabled", "err", err)
 	}
+	s.ranker = r
 	return s
 }
 
