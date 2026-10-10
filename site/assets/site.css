@@ -1,0 +1,117 @@
+/* goli.theanalogyarchitect.com — tokens and type from The Analogy Architect. */
+@font-face{font-family:'Fraunces';src:url(/fonts/fraunces.woff2) format('woff2');font-weight:400 600;font-display:swap}
+@font-face{font-family:'Hanken Grotesk';src:url(/fonts/hanken.woff2) format('woff2');font-weight:300 600;font-display:swap}
+
+:root{
+  --paper:#FFFFFF;--surface:#F7F7F5;--ink:#111113;--ink-soft:#5B5B60;--ink-faint:#82828A;--line:#EAEAE7;
+  --accent:#C2410C;--accent-fill:#FF6B35;--on-accent:#111113;
+  --code-bg:#F1F0EC;
+  --shadow:0 1px 2px rgba(17,17,19,.05),0 18px 42px -24px rgba(17,17,19,.18);
+}
+html[data-theme="dark"]{
+  --paper:#0B0B0D;--surface:#161619;--ink:#ECECEE;--ink-soft:#9B9BA3;--ink-faint:#7C7C86;--line:#26262A;
+  --accent:#FF6B35;--code-bg:#121215;
+  --shadow:0 1px 2px rgba(0,0,0,.45),0 24px 50px -26px rgba(0,0,0,.75);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font:400 16px/1.65 'Hanken Grotesk',system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;transition:background-color .35s,color .35s;min-height:100vh}
+a{color:var(--accent)}
+.wrap{max-width:760px;margin:0 auto;padding:32px 24px 0}
+.skip{position:absolute;left:-999px}.skip:focus{left:16px;top:12px;background:var(--surface);padding:6px 10px;border-radius:8px;z-index:9}
+
+/* top bar — same pattern as theanalogyarchitect.com */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:44px;gap:12px}
+.brand-stack{display:flex;flex-direction:column;gap:2px;text-decoration:none;color:var(--ink)}
+.brand-name{font:600 22px/1 'Fraunces',Georgia,serif;letter-spacing:-.02em}
+.brand-name b{color:var(--accent);font-weight:600}
+.powered{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+.top-right{display:flex;align-items:center;gap:10px}
+.nav a{font-size:13px;color:var(--ink-soft);text-decoration:none;padding:6px 8px;border-radius:8px}
+.nav a:hover,.nav a[aria-current="page"]{color:var(--ink)}
+.theme-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--ink-soft);
+  display:grid;place-items:center;cursor:pointer;padding:0;transition:transform .2s,border-color .2s,color .2s}
+.theme-btn:hover{border-color:var(--ink);color:var(--ink);transform:rotate(-12deg)}
+.theme-btn .ic-moon{display:none}
+html[data-theme="dark"] .theme-btn .ic-sun{display:none}
+html[data-theme="dark"] .theme-btn .ic-moon{display:block}
+
+/* hero */
+.kicker{font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+h1,.headline{font:500 clamp(34px,7vw,54px)/1.06 'Fraunces',Georgia,serif;letter-spacing:-.025em;margin:0 0 18px}
+.headline em{font-style:italic;color:var(--accent)}
+.sub{font-weight:300;font-size:18px;color:var(--ink-soft);max-width:580px;margin:0 0 26px}
+.cta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:15px;text-decoration:none;border-radius:999px;padding:11px 20px;
+  border:1px solid var(--line);color:var(--ink);transition:transform .15s,border-color .15s}
+.btn:hover{transform:translateY(-1px);border-color:var(--ink-soft)}
+.btn.primary{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-accent)}
+.meta{font-size:12px;color:var(--ink-faint)}
+
+/* demo: address-bar → destination */
+.demo{margin:40px 0 8px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:var(--shadow);overflow:hidden}
+.demo-row{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1.3fr);gap:12px;align-items:center;padding:12px 18px;border-top:1px solid var(--line)}
+.demo-row:first-child{border-top:0}
+.demo-row .in{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;color:var(--ink)}
+.demo-row .in b{color:var(--accent);font-weight:600}
+.demo-row .arrow{color:var(--ink-faint)}
+.demo-row .out{font-size:13px;color:var(--ink-soft);overflow-wrap:anywhere}
+
+/* sections */
+section{margin-top:64px}
+h2{font:500 28px/1.2 'Fraunces',Georgia,serif;letter-spacing:-.015em;margin:0 0 10px}
+h3{font:500 19px/1.3 'Fraunces',Georgia,serif;margin:28px 0 6px}
+.section-label{font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+.divider{border-top:1px solid var(--line);margin:12px 0 22px}
+.lead{color:var(--ink-soft);font-weight:300;margin:0 0 20px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-top:2px solid var(--accent-fill);border-radius:14px;padding:18px 18px 16px;box-shadow:var(--shadow)}
+.card .icon{font-size:22px;line-height:1}
+.card h3{margin:10px 0 4px;font-size:18px}
+.card p{margin:0;font-size:14px;font-weight:300;line-height:1.55;color:var(--ink-soft)}
+
+pre,code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+code{font-size:.9em;background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:1px 5px}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow-x:auto;font-size:13.5px;line-height:1.6;margin:12px 0 18px}
+pre code{background:none;border:0;padding:0;font-size:inherit}
+pre .c{color:var(--ink-faint)}
+
+.steps{counter-reset:s;list-style:none;padding:0;margin:0}
+.steps li{counter-increment:s;position:relative;padding:0 0 18px 44px}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;
+  display:grid;place-items:center;font:600 13px 'Hanken Grotesk';background:var(--accent-fill);color:var(--on-accent)}
+
+table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0 18px}
+th,td{text-align:left;padding:9px 8px;border-top:1px solid var(--line);vertical-align:top}
+th{font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);border-top:0}
+
+.toc{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;margin:0 0 8px}
+.toc a{color:var(--ink-soft);text-decoration:none;border-bottom:1px solid var(--line)}
+.toc a:hover{color:var(--ink);border-color:var(--accent-fill)}
+.note{border-left:3px solid var(--accent-fill);padding:4px 14px;color:var(--ink-soft);margin:14px 0}
+details{border-top:1px solid var(--line);padding:12px 0}
+details summary{cursor:pointer;font-weight:500}
+details p{color:var(--ink-soft);margin:8px 0 0}
+
+/* footer — same pattern as theanalogyarchitect.com */
+.footer{margin-top:88px;padding:22px 0 56px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-faint)}
+.footer-top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.footer a{color:var(--ink-soft);text-decoration:none;border-bottom:1px solid transparent}
+.footer a:hover{color:var(--ink);border-color:var(--accent-fill)}
+.footer-tag{font-style:italic;margin-top:4px}
+.footer-links{display:flex;gap:6px 16px;flex-wrap:wrap}
+
+@media (max-width:640px){
+  .wrap{padding:24px 18px 0}
+  .nav{display:none}
+  .demo-row{grid-template-columns:1fr;gap:2px}
+  .demo-row .arrow{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+pre[data-copy]{position:relative;padding-right:76px}
+.copy{position:absolute;top:10px;right:10px;font:500 12px 'Hanken Grotesk',sans-serif;background:var(--surface);color:var(--ink-soft);
+  border:1px solid var(--line);border-radius:8px;padding:4px 10px;cursor:pointer}
+.copy:hover{color:var(--ink);border-color:var(--ink-soft)}

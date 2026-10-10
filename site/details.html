@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How goli works — The Analogy Architect</title>
+<meta name="description" content="How goli works: setup on macOS and Linux, the links file, templates and context-aware links, opt-in AI search and exactly what it shares, using go/ on your phone, and the security model.">
+<link rel="canonical" href="https://goli.theanalogyarchitect.com/details">
+<meta property="og:site_name" content="goli · The Analogy Architect">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://goli.theanalogyarchitect.com/details">
+<meta property="og:title" content="How goli works">
+<meta property="og:description" content="Setup, the links file, AI search and privacy, go/ on your phone, and the security model.">
+<meta property="og:image" content="https://goli.theanalogyarchitect.com/og/goli.png">
+<meta property="og:locale" content="en_IN">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://goli.theanalogyarchitect.com/og/goli.png">
+<meta name="theme-color" content="#0B0B0D">
+<link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/icon-180.png">
+<link rel="preload" href="/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/hanken.woff2" as="font" type="font/woff2" crossorigin>
+<script src="/assets/theme.js"></script>
+<link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+  <header class="topbar">
+    <a href="/" class="brand-stack" aria-label="goli — home">
+      <span class="brand-name">go<b>/</b>li</span>
+      <span class="powered">Powered by The Analogy Architect</span>
+    </a>
+    <div class="top-right">
+      <nav class="nav" aria-label="Site">
+        <a href="/">Home</a>
+        <a href="/details" aria-current="page">Details</a>
+        <a href="https://github.com/chetanparab/goli" rel="noopener">GitHub</a>
+      </nav>
+      <button type="button" id="themeBtn" class="theme-btn" title="Toggle theme" aria-label="Toggle theme">
+        <svg class="ic-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
+        <svg class="ic-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+    <p class="kicker">Project details</p>
+    <h1>How goli works</h1>
+    <p class="sub">A tiny server on your machine answers <code>http://go/…</code> and redirects you. Your links live in one YAML file you own. Everything below is the whole story — no account, no cloud.</p>
+    <nav class="toc" aria-label="On this page">
+      <a href="#how">The idea</a><a href="#install">Install</a><a href="#links">Your links</a><a href="#ai">AI search &amp; privacy</a>
+      <a href="#phone">On your phone</a><a href="#cli">Terminal</a><a href="#security">Security</a><a href="#faq">FAQ</a>
+    </nav>
+
+    <section id="how" aria-labelledby="how-h">
+      <h2 id="how-h">The idea</h2>
+      <p>When you type <code>go/claude</code>, your computer looks up the name <code>go</code>. goli adds one line to <code>/etc/hosts</code> so that name means “this machine”. The browser then asks goli's server for <code>/claude</code>; goli finds <code>claude</code> in your links file and replies “go to claude.ai”. That's it — a phone-book lookup and a redirect.</p>
+      <p>Big tech companies have had this for years (it started at Google). goli brings it to one person, with a few new tricks: search by meaning, links that depend on context, and a links file you can keep in git.</p>
+    </section>
+
+    <section id="install" aria-labelledby="install-h">
+      <h2 id="install-h">Install</h2>
+      <h3>macOS</h3>
+      <ol class="steps">
+        <li>Build and install (needs <a href="https://go.dev/dl/" rel="noopener">Go 1.25+</a>):
+          <pre data-copy><code>git clone https://github.com/chetanparab/goli &amp;&amp; cd goli
+make install</code></pre></li>
+        <li>Map <code>go</code> to this machine. <code>goli hosts</code> prints a single <code>sudo tee</code> command to run — goli never asks to run itself as root.</li>
+        <li>Start it at login with <code>goli install</code>, then check everything with <code>goli doctor</code>.</li>
+        <li>Open <code>http://go/</code> once in your browser. After that, plain <code>go/claude</code> works in Chrome, Edge and Firefox.</li>
+      </ol>
+      <h3>Linux</h3>
+      <p>Same build, then let goli use port 80 and run it as a user service:</p>
+      <pre data-copy><code>sudo setcap cap_net_bind_service=+ep $(which goli)
+systemctl --user enable --now goli   <span class="c"># unit file in the README</span></code></pre>
+      <p class="note">Why port 80? Browsers ask for <code>http://go/</code> on port 80. goli listens there but answers only this machine (and devices you explicitly allow) — everyone else on your Wi-Fi gets a polite 403.</p>
+    </section>
+
+    <section id="links" aria-labelledby="links-h">
+      <h2 id="links-h">Your links</h2>
+      <p>One file, <code>~/.config/goli/links.yaml</code>. Short form or full form, mixed freely:</p>
+      <pre><code>claude: https://claude.ai                       <span class="c"># short form</span>
+roadmap:                                        <span class="c"># full form</span>
+  url: https://docs.example.com/roadmap
+  desc: Product roadmap and quarterly plans     <span class="c"># helps search</span>
+  tags: [planning, docs]
+jira: https://acme.atlassian.net/browse/{1}     <span class="c"># go/jira/ABC-123</span>
+gh: https://github.com/me                       <span class="c"># go/gh/repo/issues appends the path</span>
+dashboard:                                      <span class="c"># context-aware</span>
+  url: https://grafana.example.com/d/prod
+  variants:
+    - when: {env: staging}
+      url: https://grafana.example.com/d/staging</code></pre>
+      <table>
+        <tr><th>Feature</th><th>How</th></tr>
+        <tr><td>Parameters</td><td><code>{1}</code>, <code>{name}</code>, <code>{*}</code> — each is escaped for where it sits (host, path or query).</td></tr>
+        <tr><td>Extra path</td><td>No placeholders? Extra segments are appended: <code>go/gh/goli/pulls</code>.</td></tr>
+        <tr><td>Context</td><td><code>goli ctx set env=staging</code>, or per link: network, hours (<code>"22-07"</code>), days (<code>"mon-fri"</code>).</td></tr>
+        <tr><td>Links as code</td><td>Point <code>links_file</code> at a git checkout. goli reloads on change, so <code>git pull</code> deploys.</td></tr>
+        <tr><td>Dead links</td><td><code>goli check</code> visits every link (it won't touch private network addresses unless you pass <code>-local</code>).</td></tr>
+      </table>
+    </section>
+
+    <section id="ai" aria-labelledby="ai-h">
+      <h2 id="ai-h">AI search &amp; privacy</h2>
+      <p>AI search is <strong>off until you turn it on</strong>. Without it, goli's local fuzzy search already handles typos and keywords — nothing leaves your machine.</p>
+      <p>Turn it on and <code>go/?the doc with our q3 plans</code> asks Claude which of your links you mean. Pick the engine:</p>
+      <table>
+        <tr><th>Engine</th><th>Uses</th></tr>
+        <tr><td><code>claude-code</code></td><td>The Claude Code CLI you're already signed in to (your Claude subscription). No API key. goli runs it with no tools, no plugins and no saved history.</td></tr>
+        <tr><td><code>anthropic</code></td><td>The Claude API, billed per request.</td></tr>
+      </table>
+      <p><strong>Exactly what is sent, and only when you search:</strong> your query, plus each link's name, description, tags and <em>host name</em> (for example <code>docs.example.com</code>, not the full address). You can send full URLs or none with <code>send_urls</code>. Opening a link never calls AI. If another website tries to trigger a search behind your back, goli answers with local search instead.</p>
+    </section>
+
+    <section id="phone" aria-labelledby="phone-h">
+      <h2 id="phone-h">On your phone</h2>
+      <p>Phones can't edit <code>/etc/hosts</code>, so goli uses <a href="https://tailscale.com" rel="noopener">Tailscale</a> (free for personal use) — a private network between your own devices. Name your computer <code>go</code> in Tailscale, add <code>allow: [tailscale]</code> to goli's config, and your phone reaches <code>http://go/</code> from anywhere.</p>
+      <p>On iPhone, Safari searches anything without a dot, so add <code>http://go/</code> to your Home Screen: tap the <strong>go/</strong> icon, type <code>claude</code>, done. Other devices can open and search links but not change them, unless you set <code>allow_write: true</code>.</p>
+    </section>
+
+    <section id="cli" aria-labelledby="cli-h">
+      <h2 id="cli-h">From the terminal</h2>
+      <pre><code>goli claude                 <span class="c"># open a link (no server needed)</span>
+goli find cloudflare dash   <span class="c"># search</span>
+goli add docs https://docs.example.com -d "Team docs" -t work
+goli ls · goli rm · goli edit · goli check · goli doctor</code></pre>
+    </section>
+
+    <section id="security" aria-labelledby="security-h">
+      <h2 id="security-h">Security</h2>
+      <p>goli had a full security and code review before going open source. In short:</p>
+      <ul>
+        <li>Answers only this machine, plus networks you list — and only when the connection arrives on that network.</li>
+        <li>Blocks DNS rebinding (strict <code>Host</code> check), cross-site writes (Go's <code>CrossOriginProtection</code>) and clickjacking (<code>frame-ancestors 'none'</code>).</li>
+        <li>Destinations must be <code>http(s)</code>; every expanded URL is re-validated.</li>
+        <li>Logs record which link you opened, not where it points. Files are private to your user.</li>
+        <li>Releases are built in CI with pinned actions, a vulnerability scan and signed build provenance.</li>
+      </ul>
+      <p>Found something? Please report it privately — see <a href="https://github.com/chetanparab/goli/blob/main/SECURITY.md" rel="noopener">SECURITY.md</a>.</p>
+    </section>
+
+    <section id="faq" aria-labelledby="faq-h">
+      <h2 id="faq-h">FAQ</h2>
+      <details><summary>Will it clash with my company's go/ links?</summary><p>On a work laptop where <code>go</code> already points to a company server, goli's hosts entry would take over. Use a different name there — goli works with any hostname you list in <code>hostnames</code>.</p></details>
+      <details><summary>Does it work when my computer is asleep?</summary><p>Your computer has to be awake to answer. On macOS, <code>keep_awake: true</code> prevents idle sleep while it's plugged in.</p></details>
+      <details><summary>Windows?</summary><p>Not yet. macOS and Linux are supported today; contributions welcome.</p></details>
+      <details><summary>Why “goli”?</summary><p>Go links → goli. And yes, the Hindi pun (<em>goli dena</em> — to give someone the slip) is fully intended: goli gets you past long URLs.</p></details>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-top">
+      <div>
+        <div>© 2026 <a href="https://www.theanalogyarchitect.com">The Analogy Architect</a> · <a href="/privacy">Privacy</a> · <a href="https://github.com/chetanparab/goli/blob/main/LICENSE" rel="noopener">MIT License</a></div>
+        <div class="footer-tag">Crafted with curiosity, clarity, and a bit of chaos.</div>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/chetanparab/goli" rel="noopener">Source</a>
+        <a href="https://github.com/chetanparab/goli/issues" rel="noopener">Issues</a>
+        <a href="https://github.com/chetanparab/goli/blob/main/SECURITY.md" rel="noopener">Security</a>
+      </div>
+    </div>
+  </footer>
+</div>
+<script src="/assets/site.js"></script>
+</body>
+</html>

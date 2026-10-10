@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://goli.theanalogyarchitect.com/sitemap.xml

@@ -2,6 +2,8 @@
 
 **Short links for everything you use.** Type `go/claude` in your browser and land on Claude. Type `go/?that doc with the q3 plans` and goli finds it for you.
 
+**Website:** [goli.theanalogyarchitect.com](https://goli.theanalogyarchitect.com) · part of [The Analogy Architect](https://www.theanalogyarchitect.com)
+
 goli ("go links", and yes, *goli dena* 😉) is a single static binary that runs a tiny redirect server on your machine, plus a CLI to open, search and manage links from the terminal.
 
 ```text
@@ -218,6 +220,8 @@ make test     # go test -race ./...
 make lint     # go vet + golangci-lint
 make run      # build and serve in the foreground
 ```
+
+The project website lives in [`site/`](site) (plain HTML/CSS, no build step) and deploys to Cloudflare Pages from `.github/workflows/site.yml`. Check it with `node tools/check-site.mjs site`.
 
 ## License
 
