@@ -3,6 +3,6 @@
   "private": true,
   "description": "The deploy CLI for the goli website, pinned with a lockfile so every package in the deploy step (which holds the Cloudflare token) is integrity-checked.",
   "dependencies": {
-    "wrangler": "4.135.0"
+    "wrangler": "4.149.0"
   }
 }
