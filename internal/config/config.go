@@ -37,6 +37,9 @@ type Config struct {
 	// Allow lists extra client networks besides this machine: CIDRs, IPs, or
 	// "tailscale" for your tailnet (100.64.0.0/10 and fd7a:115c:a1e0::/48).
 	Allow []string `yaml:"allow,omitempty"`
+	// KeepAwake stops the computer from idle-sleeping while plugged in, so
+	// other devices can always reach it (macOS only).
+	KeepAwake bool `yaml:"keep_awake,omitempty"`
 	// LinksFile overrides the location of links.yaml.
 	LinksFile string             `yaml:"links_file,omitempty"`
 	AI        AI                 `yaml:"ai"`
@@ -126,6 +129,7 @@ hostnames: [go, localhost, 127.0.0.1]
 # Requests from anywhere else are still refused.
 # allow: [tailscale]
 # hostnames: [go, localhost, 127.0.0.1, "*.ts.net"]
+# keep_awake: true   # don't idle-sleep while plugged in (macOS)
 
 ai:
   enabled: true

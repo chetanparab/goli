@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"syscall"
 	"text/tabwriter"
@@ -140,6 +141,9 @@ func cmdServe(cfg *config.Config, store *links.Store) error {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	if cfg.KeepAwake {
+		keepAwake(log)
+	}
 	err := server.New(cfg, store, log).ListenAndServe(ctx)
 	if errors.Is(err, syscall.EACCES) {
 		return fmt.Errorf("%w\nPort 80 needs listen \":80\" (all interfaces) on macOS; set listen in %s",
@@ -536,4 +540,21 @@ func orNone(name string, err error) string {
 		return err.Error()
 	}
 	return name
+}
+
+// keepAwake holds a macOS "prevent idle sleep on AC power" assertion for as
+// long as this process lives (caffeinate -w exits when we do). Closing the
+// lid still sleeps the Mac unless an external display is attached.
+func keepAwake(log *slog.Logger) {
+	if runtime.GOOS != "darwin" {
+		log.Warn("keep_awake is only supported on macOS")
+		return
+	}
+	cmd := exec.Command("/usr/bin/caffeinate", "-s", "-w", strconv.Itoa(os.Getpid()))
+	if err := cmd.Start(); err != nil {
+		log.Error("keep_awake: caffeinate", "err", err)
+		return
+	}
+	go func() { _ = cmd.Wait() }()
+	log.Info("keeping the Mac awake while on power")
 }

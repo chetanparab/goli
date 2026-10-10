@@ -62,7 +62,7 @@ Phones can't edit `/etc/hosts`, but [Tailscale](https://tailscale.com) (free for
    ```
 4. Restart the server (`goli install` again, or `goli serve`), then open `http://go/` on the phone once.
 
-Only devices on your tailnet are let in; everything else on your Wi-Fi is still refused. The computer has to be awake for links to work. Links that point to `localhost` open on the phone's own localhost, so they're only useful on the computer.
+Only devices on your tailnet are let in; everything else on your Wi-Fi is still refused. The computer has to be awake for links to work: on macOS, add `keep_awake: true` to stop idle sleep while it's plugged in (closing the lid still sleeps it unless an external display is attached). Links that point to `localhost` open on the phone's own localhost, so they're only useful on the computer.
 
 ## Links file
 
