@@ -309,7 +309,7 @@ func TestSearchBoxOpensKeysDirectly(t *testing.T) {
 func TestAssets(t *testing.T) {
 	s, _ := newServer(t)
 	h := s.Handler()
-	for _, a := range []string{"icon-180.png", "icon-512.png", "icon.svg", "manifest.webmanifest"} {
+	for _, a := range []string{"icon-180.png", "icon-512.png", "icon.svg", "manifest.webmanifest", "app.js", "theme.js", "fonts/fraunces.woff2", "fonts/hanken.woff2"} {
 		if w := do(h, "GET", "/_/"+a, nil, nil); w.Code != 200 || w.Body.Len() == 0 {
 			t.Errorf("%s: %d", a, w.Code)
 		}

@@ -1,77 +1,114 @@
 {{define "head"}}<!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.}} · goli</title>
+<script src="/_/theme.js"></script>
 <link rel="icon" href="/_/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/_/icon-180.png">
 <link rel="manifest" href="/_/manifest.webmanifest">
+<link rel="preload" href="/_/fonts/hanken.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-title" content="go/">
-<meta name="theme-color" content="#e8590c">
+<meta name="theme-color" content="#0B0B0D">
 <style>
-:root{--bg:#fbfaf8;--fg:#1d1b18;--muted:#6f6a63;--line:#e7e3dd;--card:#fff;--accent:#e8590c;--accent-fg:#fff;--ok:#2b8a3e;--warn:#b35c00}
-@media (prefers-color-scheme:dark){:root{--bg:#141311;--fg:#ece9e4;--muted:#9a948b;--line:#2c2a26;--card:#1c1b18;--accent:#ff7a2e;--accent-fg:#141311;--ok:#69db7c;--warn:#ffa94d}}
+/* Design tokens and type from The Analogy Architect (theanalogyarchitect.com). */
+@font-face{font-family:'Fraunces';src:url(/_/fonts/fraunces.woff2) format('woff2');font-weight:400 600;font-display:swap}
+@font-face{font-family:'Hanken Grotesk';src:url(/_/fonts/hanken.woff2) format('woff2');font-weight:300 600;font-display:swap}
+:root{
+  --paper:#FFFFFF;--surface:#F7F7F5;--ink:#111113;--ink-soft:#5B5B60;--ink-faint:#82828A;--line:#EAEAE7;
+  --accent:#C2410C;--accent-fill:#FF6B35;--on-accent:#111113;--ok:#2b8a3e;--warn:#b35c00;
+  --shadow:0 1px 2px rgba(17,17,19,.05),0 18px 42px -24px rgba(17,17,19,.18);
+}
+html[data-theme="dark"]{
+  --paper:#0B0B0D;--surface:#161619;--ink:#ECECEE;--ink-soft:#9B9BA3;--ink-faint:#7C7C86;--line:#26262A;
+  --accent:#FF6B35;--ok:#69db7c;--warn:#ffa94d;
+  --shadow:0 1px 2px rgba(0,0,0,.45),0 24px 50px -26px rgba(0,0,0,.75);
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:860px;margin:0 auto;padding:32px 16px 64px}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:400 15px/1.55 'Hanken Grotesk',system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;transition:background-color .3s,color .3s}
+main{max-width:860px;margin:0 auto;padding:28px 20px 64px}
 a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
-header{display:flex;align-items:center;gap:12px;margin-bottom:24px}
-.logo{font-weight:800;font-size:22px;letter-spacing:-.5px;color:var(--fg)}
-.logo b{color:var(--accent)}
-.muted{color:var(--muted)}
-code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
-form.search{display:flex;gap:8px;margin:0 0 24px}
-input,button{font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:9px 12px}
-input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+h1{font:500 clamp(24px,5vw,32px)/1.15 'Fraunces',Georgia,serif;letter-spacing:-.01em;margin:8px 0 14px}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
+.brandmark{display:flex;align-items:baseline;gap:10px;color:var(--ink)}
+.brandmark:hover{text-decoration:none}
+.logo{font:600 22px/1 'Fraunces',Georgia,serif;letter-spacing:-.02em}
+.logo b{color:var(--accent);font-weight:600}
+.brand-sub{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+.theme-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--ink-soft);
+  display:grid;place-items:center;cursor:pointer;padding:0;transition:transform .2s,border-color .2s,color .2s}
+.theme-btn:hover{border-color:var(--ink);color:var(--ink);transform:rotate(-12deg)}
+.theme-btn .ic-moon{display:none}
+html[data-theme="dark"] .theme-btn .ic-sun{display:none}
+html[data-theme="dark"] .theme-btn .ic-moon{display:block}
+.muted{color:var(--ink-soft)}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+form.search{display:flex;gap:8px;margin:0 0 22px}
+input,button{font:inherit;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 13px}
+input::placeholder{color:var(--ink-faint)}
+input:focus{outline:2px solid var(--accent-fill);outline-offset:-1px}
 input[type=search]{flex:1;min-width:0}
-button{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);cursor:pointer;font-weight:600}
-button.ghost{background:none;color:var(--muted);border-color:var(--line);font-weight:400;padding:4px 10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
-table{width:100%;border-collapse:collapse}
-td{padding:8px 6px;border-top:1px solid var(--line);vertical-align:top}
-td.key{white-space:nowrap;font-weight:600}
-td.url{word-break:break-all;color:var(--muted);font-size:.9em}
-.tag{display:inline-block;font-size:.75em;border:1px solid var(--line);border-radius:99px;padding:0 7px;margin-left:4px;color:var(--muted)}
+button{background:var(--accent-fill);color:var(--on-accent);border-color:var(--accent-fill);cursor:pointer;font-weight:600}
+button.ghost{background:none;color:var(--ink-faint);border-color:var(--line);font-weight:400;padding:3px 10px}
+button.ghost:hover{color:var(--ink);border-color:var(--ink-soft)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card strong{font:500 17px 'Fraunces',Georgia,serif}
+table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:6px}
+td{padding:9px 6px;border-top:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
+td.key{width:26%;font-weight:600}
+td.url{color:var(--ink-faint);font-size:.85em}
+td.del{width:44px;text-align:right}
+.tag{display:inline-block;font-size:9.5px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);
+  border:1px solid var(--line);border-radius:99px;padding:1px 7px;margin:2px 0 0 4px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .grid input{width:100%}
 .grid .wide{grid-column:1/-1}
-.result{display:block;padding:10px 0;border-top:1px solid var(--line);color:var(--fg)}
-.result:hover{text-decoration:none;background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.result{display:block;padding:11px 8px;border-top:1px solid var(--line);color:var(--ink);border-radius:8px}
+.result:hover{text-decoration:none;background:color-mix(in srgb,var(--accent-fill) 7%,transparent)}
 .result .k{font-weight:600;color:var(--accent)}
 .bar{height:4px;background:var(--line);border-radius:2px;margin-top:6px;max-width:160px}
-.bar span{display:block;height:100%;background:var(--accent);border-radius:2px}
+.bar span{display:block;height:100%;background:var(--accent-fill);border-radius:2px}
 .notice{border-left:3px solid var(--ok);padding:6px 12px;margin-bottom:16px}
 .notice.warn{border-color:var(--warn)}
 summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}
-table{table-layout:fixed}
-td.key{width:26%}td.del{width:40px;text-align:right}
-td.key,td{overflow-wrap:anywhere}
+footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-faint);display:flex;flex-wrap:wrap;gap:6px 14px}
+footer a{color:var(--ink-soft)}
 @media (min-width:601px){td.key{width:18%}td.url{width:34%}}
-@media (max-width:600px){.grid{grid-template-columns:1fr}td.url{display:none}td.key{white-space:normal}}
+@media (max-width:600px){.grid{grid-template-columns:1fr}td.url{display:none}.brand-sub{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body><main>
-<header><a class="logo" href="/">go<b>li</b></a><span class="muted">your short links</span></header>
+<div class="topbar">
+  <a class="brandmark" href="/" aria-label="goli home"><span class="logo">go<b>/</b>li</span><span class="brand-sub">your short links</span></a>
+  <button type="button" id="themeBtn" class="theme-btn" title="Toggle theme" aria-label="Toggle theme">
+    <svg class="ic-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
+    <svg class="ic-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8z"/></svg>
+  </button>
+</div>
 {{end}}
 
-{{define "foot"}}</main><script src="/_/app.js"></script></body></html>{{end}}
+{{define "foot"}}<footer><span>goli · part of <a href="https://www.theanalogyarchitect.com" rel="noopener">The Analogy Architect</a></span><a href="https://github.com/chetanparab/goli" rel="noopener">Source</a></footer>
+</main><script src="/_/app.js"></script></body></html>{{end}}
 
 {{define "searchbox"}}
 <form class="search" action="/_/search" method="get">
   <input type="hidden" name="go" value="1">
   <input type="search" name="q" value="{{.}}" placeholder="a key like docs, or describe what you need…" autofocus
-    autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go">
+    aria-label="Open a link or search" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go">
   <button type="submit">Go</button>
 </form>
 {{end}}
 
 {{define "createform"}}
 <form method="post" action="/_/links" class="grid">
-  <input name="key" value="{{.}}" placeholder="key, e.g. claude" required pattern="[a-z0-9][a-z0-9._\-]*(/[a-z0-9._\-]+)*">
-  <input name="url" type="url" placeholder="https://…" required>
-  <input name="desc" placeholder="description (helps search)">
-  <input name="tags" placeholder="tags, comma separated">
+  <input name="key" value="{{.}}" placeholder="key, e.g. claude" aria-label="Key" required pattern="[a-z0-9][a-z0-9._\-]*(/[a-z0-9._\-]+)*">
+  <input name="url" type="url" placeholder="https://…" aria-label="URL" required>
+  <input name="desc" placeholder="description (helps search)" aria-label="Description">
+  <input name="tags" placeholder="tags, comma separated" aria-label="Tags">
   <div class="wide"><button type="submit">Save link</button></div>
 </form>
 {{end}}

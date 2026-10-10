@@ -15,7 +15,7 @@ var tailnetRanges = []string{"100.64.0.0/10", "fd7a:115c:a1e0::/48"}
 // form-action is deliberately absent: the search form redirects to external
 // destinations, which form-action would block.
 const csp = "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; " +
-	"manifest-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'"
+	"font-src 'self'; manifest-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'"
 
 type ctxKey int
 

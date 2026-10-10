@@ -3,7 +3,9 @@ package server
 
 import (
 	"context"
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"html/template"
@@ -21,12 +23,15 @@ import (
 	"github.com/chetanparab/goli/internal/match"
 )
 
-//go:embed web/*.html web/*.png web/icon.svg web/app.js web/manifest.webmanifest
+//go:embed web/*.html web/*.png web/icon.svg web/*.js web/manifest.webmanifest web/fonts/*.woff2
 var webFS embed.FS
 
 // assets are static files served under /_/.
 var assets = map[string]string{
 	"app.js":               "text/javascript; charset=utf-8",
+	"theme.js":             "text/javascript; charset=utf-8",
+	"fonts/fraunces.woff2": "font/woff2",
+	"fonts/hanken.woff2":   "font/woff2",
 	"icon-180.png":         "image/png",
 	"icon-512.png":         "image/png",
 	"icon.svg":             "image/svg+xml",
@@ -85,6 +90,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /_/health", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("ok\n")) })
 	mux.HandleFunc("GET /_/search", s.handleSearch)
 	mux.HandleFunc("GET /_/{asset}", serveAsset)
+	mux.HandleFunc("GET /_/fonts/{font}", serveAsset)
 	mux.HandleFunc("GET /_/api/links", s.apiList)
 	mux.HandleFunc("POST /_/api/links", s.apiPut)
 	mux.HandleFunc("DELETE /_/api/links/{key...}", s.apiDelete)
@@ -198,6 +204,9 @@ func searchQuery(r *http.Request) string {
 
 func serveAsset(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("asset")
+	if f := r.PathValue("font"); f != "" {
+		name = "fonts/" + f
+	}
 	ctype, ok := assets[name]
 	if !ok {
 		http.NotFound(w, r)
@@ -208,8 +217,16 @@ func serveAsset(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	// Revalidate by content hash, so a goli upgrade is picked up immediately.
+	sum := sha256.Sum256(data)
+	etag := `"` + hex.EncodeToString(sum[:8]) + `"`
 	w.Header().Set("Content-Type", ctype)
-	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("ETag", etag)
+	if r.Header.Get("If-None-Match") == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
 	w.Write(data) // #nosec G705 -- embedded file from the fixed assets allowlist
 }
 
