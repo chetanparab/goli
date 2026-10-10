@@ -24,7 +24,7 @@ func fakeClaude(t *testing.T, body string) string {
 
 var catalogLinks = []*links.Link{
 	{Key: "cf", URL: "https://dash.cloudflare.com", Desc: "Cloudflare dashboard"},
-	{Key: "rahu", URL: "https://rahu.example.com"},
+	{Key: "notes", URL: "https://notes.example.com"},
 }
 
 func TestClaudeCodeRank(t *testing.T) {

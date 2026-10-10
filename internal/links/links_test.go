@@ -191,3 +191,61 @@ func TestExampleFileParses(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestResolveEscapingByPart(t *testing.T) {
+	s := newStore(t, `search: https://docs.example.com/search?q={*}
+team: https://{1}.slack.example.com/archives
+sorted: https://x.example.com/?b=1&a=2
+spa: https://app.example.com/#/home
+`)
+	tests := []struct{ path, query, want string }{
+		{"search/c++", "", "https://docs.example.com/search?q=c%2B%2B"},
+		{"search/a&admin=1", "", "https://docs.example.com/search?q=a%26admin%3D1"},
+		{"team/acme", "", "https://acme.slack.example.com/archives"},
+		{"sorted", "z=1", "https://x.example.com/?b=1&a=2&z=1"},
+		{"spa/settings", "", "https://app.example.com/#/home/settings"},
+	}
+	for _, tt := range tests {
+		q, _ := url.ParseQuery(tt.query)
+		res, err := s.Resolve(tt.path, q, noon())
+		if err != nil {
+			t.Errorf("Resolve(%q): %v", tt.path, err)
+			continue
+		}
+		if res.URL != tt.want {
+			t.Errorf("Resolve(%q) = %q, want %q", tt.path, res.URL, tt.want)
+		}
+	}
+	for _, bad := range []string{"team/evil.com:443@x", "team/a.b"} {
+		if _, err := s.Resolve(bad, nil, noon()); err == nil {
+			t.Errorf("Resolve(%q) should refuse a host injection", bad)
+		}
+	}
+}
+
+func TestPutWritesThroughSymlinkAndKeepsMode(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "repo", "links.yaml")
+	os.MkdirAll(filepath.Dir(target), 0o755)
+	os.WriteFile(target, []byte("a: https://a.example.com\n"), 0o640)
+	link := filepath.Join(dir, "links.yaml")
+	if err := os.Symlink(target, link); err != nil {
+		t.Fatal(err)
+	}
+	s, err := Open(link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Put(&Link{Key: "b", URL: "https://b.example.com"}); err != nil {
+		t.Fatal(err)
+	}
+	if fi, _ := os.Lstat(link); fi.Mode()&os.ModeSymlink == 0 {
+		t.Error("symlink was replaced by a regular file")
+	}
+	if fi, _ := os.Stat(target); fi.Mode().Perm() != 0o640 {
+		t.Errorf("mode changed to %v", fi.Mode().Perm())
+	}
+	if data, _ := os.ReadFile(target); !strings.Contains(string(data), "b.example.com") {
+		t.Error("edit didn't reach the symlink target")
+	}
+}

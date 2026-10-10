@@ -89,42 +89,116 @@ func Placeholders(u string) []string {
 	return out
 }
 
+// URL parts a placeholder can sit in; each needs different escaping.
+const (
+	partHost = iota
+	partPath
+	partQuery
+)
+
+var hostLabelRe = regexp.MustCompile(`^[A-Za-z0-9-]+$`)
+
+// partAt reports which part of a URL template the byte offset i falls in.
+func partAt(tmpl string, i int) int {
+	hostStart := strings.Index(tmpl, "://") + 3
+	hostEnd := len(tmpl)
+	if j := strings.IndexAny(tmpl[hostStart:], "/?#"); j >= 0 {
+		hostEnd = hostStart + j
+	}
+	if i < hostEnd {
+		return partHost
+	}
+	if q := strings.IndexAny(tmpl, "?#"); q >= 0 && i > q {
+		return partQuery
+	}
+	return partPath
+}
+
+func escapeFor(part int, s string) (string, error) {
+	switch part {
+	case partHost:
+		if !hostLabelRe.MatchString(s) {
+			return "", fmt.Errorf("%q can't be used in a host name", s)
+		}
+		return s, nil
+	case partQuery:
+		return url.QueryEscape(s), nil
+	default:
+		return url.PathEscape(s), nil
+	}
+}
+
 func expand(l *Link, target string, rest []string, query url.Values) (string, error) {
-	names := Placeholders(target)
-	if len(names) > 0 {
-		next := 0
+	if len(Placeholders(target)) > 0 {
+		var b strings.Builder
+		next, last := 0, 0
 		var missing []string
-		target = placeholderRe.ReplaceAllStringFunc(target, func(m string) string {
-			name := m[1 : len(m)-1]
-			if name == "*" {
+		for _, m := range placeholderRe.FindAllStringSubmatchIndex(target, -1) {
+			b.WriteString(target[last:m[0]])
+			last = m[1]
+			name := target[m[2]:m[3]]
+			part := partAt(target, m[0])
+			var val string
+			switch name {
+			case "*":
 				next = len(rest)
-				return escapeSegments(rest)
+				switch part {
+				case partQuery:
+					val = url.QueryEscape(strings.Join(rest, "/"))
+				case partHost:
+					return "", fmt.Errorf("go/%s: {*} can't be used in a host name", l.Key)
+				default:
+					val = escapeSegments(rest)
+				}
+			default:
+				idx := next
+				if n, err := strconv.Atoi(name); err == nil {
+					idx = n - 1
+				} else {
+					next++
+				}
+				if idx < 0 || idx >= len(rest) {
+					missing = append(missing, name)
+					continue
+				}
+				v, err := escapeFor(part, rest[idx])
+				if err != nil {
+					return "", fmt.Errorf("go/%s: %w", l.Key, err)
+				}
+				val = v
 			}
-			idx := next
-			if n, err := strconv.Atoi(name); err == nil {
-				idx = n - 1
-			} else {
-				next++
-			}
-			if idx < 0 || idx >= len(rest) {
-				missing = append(missing, name)
-				return ""
-			}
-			return url.PathEscape(rest[idx])
-		})
+			b.WriteString(val)
+		}
+		b.WriteString(target[last:])
 		if len(missing) > 0 {
 			return "", &MissingArgsError{Link: l, Need: missing}
 		}
+		target = b.String()
 	} else if len(rest) > 0 {
 		u, err := url.Parse(target)
 		if err != nil {
 			return "", err
 		}
-		u.Path = strings.TrimSuffix(u.Path, "/") + "/" + strings.Join(rest, "/")
-		u.RawPath = ""
+		extra := strings.Join(rest, "/")
+		if strings.HasPrefix(u.Fragment, "/") {
+			// Hash-routed single-page app (https://app/#/home): extend the route.
+			u.Fragment = strings.TrimSuffix(u.Fragment, "/") + "/" + extra
+		} else {
+			u.Path = strings.TrimSuffix(u.Path, "/") + "/" + extra
+			u.RawPath = ""
+		}
 		target = u.String()
 	}
-	return withQuery(target, query)
+	out, err := withQuery(target, query)
+	if err != nil {
+		return "", err
+	}
+	// Whatever was substituted, the result must still be a plain web URL.
+	u, err := url.Parse(out)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil {
+		return "", fmt.Errorf("go/%s: expanded to an invalid URL", l.Key)
+	}
+	return out, nil
 }
 
 func escapeSegments(segs []string) string {
@@ -135,6 +209,8 @@ func escapeSegments(segs []string) string {
 	return strings.Join(esc, "/")
 }
 
+// withQuery appends forwarded query parameters (except ctx.*) without
+// re-encoding or reordering the destination's own query string.
 func withQuery(target string, query url.Values) (string, error) {
 	fwd := url.Values{}
 	for k, vs := range query {
@@ -149,13 +225,11 @@ func withQuery(target string, query url.Values) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	q := u.Query()
-	for k, vs := range fwd {
-		for _, v := range vs {
-			q.Add(k, v)
-		}
+	if u.RawQuery == "" {
+		u.RawQuery = fwd.Encode()
+	} else {
+		u.RawQuery += "&" + fwd.Encode()
 	}
-	u.RawQuery = q.Encode()
 	return u.String(), nil
 }
 

@@ -129,13 +129,14 @@ func tokens(s string) []string {
 }
 
 func isSubsequence(q, s string) bool {
+	qr := []rune(q)
 	i := 0
 	for _, r := range s {
-		if i < len(q) && rune(q[i]) == r {
+		if i < len(qr) && qr[i] == r {
 			i++
 		}
 	}
-	return i == len(q)
+	return i == len(qr)
 }
 
 // similarity is 1 - normalised Damerau-Levenshtein (optimal string alignment) distance.

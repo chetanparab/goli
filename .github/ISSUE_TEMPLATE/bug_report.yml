@@ -1,0 +1,34 @@
+name: Bug report
+description: Something isn't working as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Please don't include private links, tokens or hostnames. Security issues go to SECURITY.md instead."
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations: {required: true}
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Include a minimal links.yaml / config.yaml if relevant (use example.com URLs).
+  - type: input
+    id: version
+    attributes:
+      label: goli version
+      description: Output of `goli version`
+    validations: {required: true}
+  - type: input
+    id: os
+    attributes:
+      label: OS and browser
+      placeholder: macOS 26.1, Safari 26
+  - type: textarea
+    id: doctor
+    attributes:
+      label: goli doctor output
+      render: text

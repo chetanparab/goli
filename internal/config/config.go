@@ -2,8 +2,10 @@
 package config
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -25,6 +27,9 @@ type AI struct {
 	Provider  string `yaml:"provider,omitempty"`
 	Model     string `yaml:"model,omitempty"`      // empty: the provider's default
 	ClaudeBin string `yaml:"claude_bin,omitempty"` // path to the claude CLI, if not on PATH
+	// SendURLs controls how much of each link's URL is shared with the AI
+	// provider: "host" (default, e.g. docs.example.com), "full", or "none".
+	SendURLs string `yaml:"send_urls,omitempty"`
 }
 
 // Config is the contents of config.yaml.
@@ -37,6 +42,9 @@ type Config struct {
 	// Allow lists extra client networks besides this machine: CIDRs, IPs, or
 	// "tailscale" for your tailnet (100.64.0.0/10 and fd7a:115c:a1e0::/48).
 	Allow []string `yaml:"allow,omitempty"`
+	// AllowWrite lets clients from Allow networks create and delete links.
+	// Off by default: other devices can open and search links, not change them.
+	AllowWrite bool `yaml:"allow_write,omitempty"`
 	// KeepAwake stops the computer from idle-sleeping while plugged in, so
 	// other devices can always reach it (macOS only).
 	KeepAwake bool `yaml:"keep_awake,omitempty"`
@@ -64,7 +72,7 @@ func defaults() Config {
 	return Config{
 		Listen:    ":80",
 		Hostnames: []string{"go", "localhost", "127.0.0.1"},
-		AI:        AI{Enabled: true, Provider: "claude-code"},
+		AI:        AI{Enabled: false, Provider: "claude-code", SendURLs: "host"},
 	}
 }
 
@@ -74,7 +82,7 @@ func Load() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, err
 	}
 	cfg := defaults()
@@ -82,7 +90,7 @@ func Load() (*Config, error) {
 	path := filepath.Join(dir, "config.yaml")
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
-		if err := os.WriteFile(path, []byte(defaultConfigYAML), 0o644); err != nil {
+		if err := os.WriteFile(path, []byte(defaultConfigYAML), 0o600); err != nil {
 			return nil, err
 		}
 		return &cfg, nil
@@ -90,7 +98,9 @@ func Load() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	dec := yaml.NewDecoder(bytes.NewReader(data))
+	dec.KnownFields(true) // catch typos like "alow:" instead of ignoring them
+	if err := dec.Decode(&cfg); err != nil && !errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
 	return &cfg, nil
@@ -126,16 +136,22 @@ hostnames: [go, localhost, 127.0.0.1]
 # links_file: ~/code/goli-links/links.yaml
 
 # Let your other devices use go/ too, e.g. your phone over Tailscale.
-# Requests from anywhere else are still refused.
+# Requests from anywhere else are still refused. Use your own tailnet name
+# in hostnames (see 'tailscale status'), not a bare *.ts.net.
 # allow: [tailscale]
-# hostnames: [go, localhost, 127.0.0.1, "*.ts.net"]
-# keep_awake: true   # don't idle-sleep while plugged in (macOS)
+# allow_write: false        # other devices can open and search, not edit
+# hostnames: [go, localhost, 127.0.0.1, "go.tailXXXX.ts.net"]
+# keep_awake: true          # don't idle-sleep while plugged in (macOS)
 
+# AI search (go/?words) is off until you turn it on. When on, each search
+# sends your query and link catalog (keys, descriptions, tags, and URLs as
+# set by send_urls) to the provider.
 ai:
-  enabled: true
+  enabled: false
   # claude-code: runs the local claude CLI with its own login (run 'claude auth login' once)
   # anthropic:   calls the Claude API (ANTHROPIC_API_KEY or 'ant auth login')
   provider: claude-code
+  send_urls: host            # host | full | none
   # model: claude-opus-5-5   # optional; defaults to the provider's default
 
 # Named networks for context-aware links (variants with when: {network: home}).

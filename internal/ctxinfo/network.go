@@ -34,10 +34,22 @@ func (d *Detector) Current() []string {
 		return nil
 	}
 	d.mu.Lock()
-	defer d.mu.Unlock()
 	if time.Since(d.at) < d.ttl {
-		return d.current
+		cur := d.current
+		d.mu.Unlock()
+		return cur
 	}
+	d.at = time.Now() // other callers keep using the cached answer meanwhile
+	cur := d.current
+	d.mu.Unlock()
+	if cur != nil || len(d.networks) == 0 {
+		go d.probe()
+		return cur
+	}
+	return d.probe()
+}
+
+func (d *Detector) probe() []string {
 	gw := defaultGateway()
 	var found []string
 	for name, n := range d.networks {
@@ -45,7 +57,9 @@ func (d *Detector) Current() []string {
 			found = append(found, name)
 		}
 	}
+	d.mu.Lock()
 	d.current, d.at = found, time.Now()
+	d.mu.Unlock()
 	return found
 }
 

@@ -9,6 +9,7 @@ package ai
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/chetanparab/goli/internal/config"
@@ -38,11 +39,20 @@ func New(cfg config.AI) (Ranker, error) {
 	if !cfg.Enabled {
 		return nil, nil
 	}
+	switch cfg.SendURLs {
+	case "", "host", "full", "none":
+	default:
+		return nil, fmt.Errorf("unknown ai.send_urls %q (use host, full or none)", cfg.SendURLs)
+	}
 	switch cfg.Provider {
 	case "", ProviderClaudeCode:
-		return NewClaudeCode(cfg.ClaudeBin, cfg.Model), nil
+		cc := NewClaudeCode(cfg.ClaudeBin, cfg.Model)
+		cc.sendURLs = cfg.SendURLs
+		return cc, nil
 	case ProviderAnthropic:
-		return NewAPI(cfg.Model), nil
+		api := NewAPI(cfg.Model)
+		api.sendURLs = cfg.SendURLs
+		return api, nil
 	default:
 		return nil, fmt.Errorf("unknown ai.provider %q (use %q or %q)", cfg.Provider, ProviderClaudeCode, ProviderAnthropic)
 	}
@@ -73,14 +83,30 @@ var schema = map[string]any{
 }
 
 // catalog renders links one per line and returns the set of valid keys.
-func catalog(all []*links.Link) (string, map[string]bool) {
+// sendURLs ("host", "full" or "none") limits how much of each URL is shared:
+// full URLs can carry private document IDs or tokens.
+func catalog(all []*links.Link, sendURLs string) (string, map[string]bool) {
 	known := make(map[string]bool, len(all))
 	var b strings.Builder
 	for _, l := range all {
 		known[l.Key] = true
-		fmt.Fprintf(&b, "%s | %s | %s | %s\n", l.Key, l.Desc, strings.Join(l.Tags, ","), l.URL)
+		fmt.Fprintf(&b, "%s | %s | %s | %s\n", l.Key, l.Desc, strings.Join(l.Tags, ","), shareURL(l.URL, sendURLs))
 	}
 	return b.String(), known
+}
+
+func shareURL(raw, mode string) string {
+	switch mode {
+	case "full":
+		return raw
+	case "none":
+		return ""
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return ""
+	}
+	return u.Hostname()
 }
 
 // keepKnown drops picks whose key isn't in the catalog.

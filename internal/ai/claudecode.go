@@ -18,8 +18,9 @@ import (
 // ClaudeCode ranks links by running the Claude Code CLI in print mode, so
 // searches use the CLI's own login instead of an API key.
 type ClaudeCode struct {
-	bin   string
-	model string
+	bin      string
+	model    string
+	sendURLs string
 }
 
 // NewClaudeCode returns a ClaudeCode ranker. bin may be empty to search PATH
@@ -69,10 +70,10 @@ func (c *ClaudeCode) Rank(ctx context.Context, query string, all []*links.Link) 
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	cat, known := catalog(all)
+	cat, known := catalog(all, c.sendURLs)
 	schemaJSON, err := json.Marshal(schema)
 	if err != nil {
 		return nil, err

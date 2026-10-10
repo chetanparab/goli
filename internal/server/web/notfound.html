@@ -14,7 +14,7 @@
     {{end}}
   </div>
   {{end}}
-  {{if .KeyValid}}
+  {{if and .KeyValid .CanWrite}}
   <div class="card">
     <strong>Create go/{{.Key}}</strong>
     <p></p>

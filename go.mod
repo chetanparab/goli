@@ -1,6 +1,8 @@
 module github.com/chetanparab/goli
 
-go 1.24.0
+go 1.25.0
+
+toolchain go1.27.2
 
 require (
 	github.com/anthropics/anthropic-sdk-go v1.80.0

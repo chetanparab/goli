@@ -2,9 +2,13 @@ package links
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -38,8 +42,20 @@ func Check(ctx context.Context, all []*Link, includeLocal bool) []CheckResult {
 			jobs = append(jobs, job{l.Key, v.URL})
 		}
 	}
+	dialer := &net.Dialer{Timeout: 5 * time.Second}
+	if !includeLocal {
+		// Checked at connect time, so redirects to internal hosts are refused too.
+		dialer.Control = func(_, address string, _ syscall.RawConn) error {
+			host, _, _ := net.SplitHostPort(address)
+			if ip := net.ParseIP(host); ip != nil && isInternal(ip) {
+				return fmt.Errorf("refusing internal address %s (use -local)", ip)
+			}
+			return nil
+		}
+	}
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Transport: &http.Transport{DialContext: dialer.DialContext, TLSHandshakeTimeout: 5 * time.Second},
+		Timeout:   10 * time.Second,
 		CheckRedirect: func(_ *http.Request, via []*http.Request) error {
 			if len(via) >= 10 {
 				return http.ErrUseLastResponse
@@ -77,13 +93,14 @@ func Check(ctx context.Context, all []*Link, includeLocal bool) []CheckResult {
 	return results
 }
 
+// probe tries HEAD first (no side effects on well-behaved sites) and falls
+// back to GET for servers that don't support it.
 func probe(ctx context.Context, c *http.Client, u, host string) (CheckStatus, string) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
-	if err != nil {
-		return StatusBroken, err.Error()
+	resp, err := request(ctx, c, http.MethodHead, u)
+	if err == nil && (resp.StatusCode == http.StatusMethodNotAllowed || resp.StatusCode == http.StatusNotImplemented) {
+		resp.Body.Close()
+		resp, err = request(ctx, c, http.MethodGet, u)
 	}
-	req.Header.Set("User-Agent", "goli-linkcheck/1.0")
-	resp, err := c.Do(req)
 	if err != nil {
 		return StatusBroken, err.Error()
 	}
@@ -101,7 +118,25 @@ func probe(ctx context.Context, c *http.Client, u, host string) (CheckStatus, st
 	}
 }
 
+func request(ctx context.Context, c *http.Client, method, u string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, method, u, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "goli-linkcheck/1.0")
+	return c.Do(req)
+}
+
+// isInternal reports loopback, private, link-local and unspecified addresses.
+func isInternal(ip net.IP) bool {
+	return ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() ||
+		ip.IsLinkLocalMulticast() || ip.IsUnspecified() || ip.IsInterfaceLocalMulticast()
+}
+
 func isLocal(host string) bool {
-	return host == "localhost" || host == "127.0.0.1" || host == "::1" ||
-		len(host) > 10 && host[len(host)-10:] == ".localhost"
+	if ip := net.ParseIP(host); ip != nil {
+		return isInternal(ip)
+	}
+	return host == "localhost" || strings.HasSuffix(host, ".localhost") ||
+		strings.HasSuffix(host, ".local") || !strings.Contains(host, ".")
 }

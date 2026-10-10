@@ -137,6 +137,13 @@ func run(args []string) error {
 	}
 }
 
+// subcommands are names `goli <key>` can't open directly.
+var subcommands = map[string]bool{
+	"help": true, "version": true, "hosts": true, "serve": true, "add": true, "rm": true,
+	"delete": true, "ls": true, "list": true, "find": true, "search": true, "edit": true,
+	"check": true, "ctx": true, "install": true, "uninstall": true, "doctor": true, "open": true,
+}
+
 func cmdServe(cfg *config.Config, store *links.Store) error {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -146,7 +153,8 @@ func cmdServe(cfg *config.Config, store *links.Store) error {
 	}
 	err := server.New(cfg, store, log).ListenAndServe(ctx)
 	if errors.Is(err, syscall.EACCES) {
-		return fmt.Errorf("%w\nPort 80 needs listen \":80\" (all interfaces) on macOS; set listen in %s",
+		return fmt.Errorf("%w\nPort 80 needs listen \":80\" (all interfaces) on macOS; on Linux run "+
+			"`sudo setcap cap_net_bind_service=+ep $(which goli)`. Or use a high port in %s",
 			err, filepath.Join(cfg.Dir(), "config.yaml"))
 	}
 	if errors.Is(err, http.ErrServerClosed) {
@@ -227,6 +235,9 @@ func cmdAdd(store *links.Store, args []string) error {
 		return err
 	}
 	fmt.Printf("go/%s → %s\n", l.Key, l.URL)
+	if subcommands[l.Key] {
+		fmt.Fprintf(os.Stderr, "note: %q is also a goli command; open it with `goli open %s`\n", l.Key, l.Key)
+	}
 	return nil
 }
 
@@ -361,8 +372,10 @@ func cmdInstall() error {
 	if err != nil {
 		return err
 	}
-	if bin, err = filepath.EvalSymlinks(bin); err != nil {
-		return err
+	// Resolve symlinks, except into a Homebrew Cellar: that path changes on
+	// every upgrade, while the bin/ symlink stays put.
+	if resolved, err := filepath.EvalSymlinks(bin); err == nil && !strings.Contains(resolved, "/Cellar/") {
+		bin = resolved
 	}
 	env := map[string]string{"PATH": "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin"}
 	if h := os.Getenv("GOLI_HOME"); h != "" {
@@ -398,11 +411,13 @@ func cmdHosts(args []string) error {
 		return nil
 	}
 	if !*apply {
-		fmt.Println("Add to /etc/hosts:")
-		for _, l := range missing {
-			fmt.Println("  " + l)
-		}
-		fmt.Println("or run: sudo goli hosts -apply")
+		// Recommend a command that doesn't run goli itself as root: the goli
+		// binary is usually user-writable, so `sudo goli` trusts it with root.
+		fmt.Println("Add go to /etc/hosts (needs your password):")
+		fmt.Printf("  printf '\\n# goli: go/ short links\\n%s\\n' | sudo tee -a /etc/hosts >/dev/null\n",
+			strings.ReplaceAll(strings.Join(missing, "\\n"), "\t", " "))
+		fmt.Println("  sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder")
+		fmt.Println("(or: sudo goli hosts -apply)")
 		return nil
 	}
 	f, err := os.OpenFile("/etc/hosts", os.O_APPEND|os.O_WRONLY, 0)
@@ -414,6 +429,7 @@ func cmdHosts(args []string) error {
 		return err
 	}
 	_ = exec.Command("dscacheutil", "-flushcache").Run()
+	_ = exec.Command("killall", "-HUP", "mDNSResponder").Run()
 	fmt.Println("added go to /etc/hosts")
 	return nil
 }
@@ -452,11 +468,13 @@ func cmdDoctor(cfg *config.Config, store *links.Store) error {
 	ok(true, fmt.Sprintf("%d links in %s", len(store.All()), store.Path()), "")
 
 	hosts, _ := os.ReadFile("/etc/hosts")
-	ok(hostsHas(string(hosts), hostsLines[0]), "/etc/hosts maps go → 127.0.0.1", "sudo goli hosts -apply")
+	ok(hostsHas(string(hosts), hostsLines[0]), "/etc/hosts maps go → 127.0.0.1", "goli hosts   (prints the command to run)")
 
-	plist, _ := launchd.PlistPath()
-	_, err := os.Stat(plist)
-	ok(err == nil, "server starts at login", "goli install")
+	if runtime.GOOS == "darwin" {
+		plist, _ := launchd.PlistPath()
+		_, err := os.Stat(plist)
+		ok(err == nil, "server starts at login", "goli install")
+	}
 
 	port := "80"
 	if i := strings.LastIndex(cfg.Listen, ":"); i >= 0 {

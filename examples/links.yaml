@@ -14,7 +14,7 @@ roadmap:
 # Parameters: {1}, {2}… positional, {name} in order, {*} = everything after the key
 jira: https://example.atlassian.net/browse/{1}       # go/jira/ABC-123
 pr: https://github.com/{owner}/{repo}/pull/{n}        # go/pr/acme/api/42
-docs: https://docs.example.com/search?q={*}           # go/docs/rate limits
+docs: https://docs.example.com/search?q={*}           # go/docs/rate limits (escaped for the query)
 
 # Nested keys
 team/wiki: https://wiki.example.com

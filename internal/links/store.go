@@ -67,9 +67,6 @@ func ValidateKey(k string) error {
 	if !keyRe.MatchString(k) {
 		return fmt.Errorf("invalid key %q: use lowercase letters, digits, '.', '_', '-' and '/' separators", k)
 	}
-	if strings.HasPrefix(k, "_") {
-		return fmt.Errorf("invalid key %q: keys starting with '_' are reserved", k)
-	}
 	return nil
 }
 
@@ -107,10 +104,10 @@ type Store struct {
 // Open loads the store at path, creating an empty file if needed.
 func Open(path string) (*Store, error) {
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 			return nil, err
 		}
-		if err := os.WriteFile(path, []byte(emptyLinksYAML), 0o644); err != nil {
+		if err := os.WriteFile(path, []byte(emptyLinksYAML), 0o600); err != nil {
 			return nil, err
 		}
 	}
@@ -138,7 +135,10 @@ func (s *Store) load() error {
 		return fmt.Errorf("%s: %w", s.path, err)
 	}
 	s.mu.Lock()
-	s.links, s.mtime = links, fi.ModTime()
+	// An edit() may have installed a newer copy while we were reading.
+	if s.links == nil || fi.ModTime().After(s.mtime) {
+		s.links, s.mtime = links, fi.ModTime()
+	}
 	s.mu.Unlock()
 	return nil
 }
@@ -244,6 +244,12 @@ func (s *Store) Delete(key string) error {
 func (s *Store) edit(fn func(root *yaml.Node) error) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// Serialise with other goli processes (CLI vs server) editing the same file.
+	unlock, err := lockFile(s.path + ".lock")
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	data, err := os.ReadFile(s.path)
 	if err != nil {
 		return err
@@ -292,13 +298,31 @@ func (s *Store) edit(fn func(root *yaml.Node) error) error {
 	return nil
 }
 
+// writeAtomic replaces path's contents via a temp file and rename, so a crash
+// never leaves a half-written file. It writes through symlinks (dotfile and
+// links-as-code setups) and keeps the file's permissions.
 func writeAtomic(path string, data []byte) error {
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		path = resolved
+	}
+	mode := os.FileMode(0o644)
+	if fi, err := os.Stat(path); err == nil {
+		mode = fi.Mode().Perm()
+	}
 	tmp, err := os.CreateTemp(filepath.Dir(path), ".links-*.yaml")
 	if err != nil {
 		return err
 	}
 	defer os.Remove(tmp.Name())
 	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Chmod(mode); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
 		tmp.Close()
 		return err
 	}

@@ -16,5 +16,5 @@ q="$1"
 if [[ "$q" == \?* ]]; then
   words="${q#\?}"; open "http://go/?${words// /%20}"
 else
-  goli "$q" >/dev/null || open "http://go/${q}"
+  goli open "$q" >/dev/null || open "http://go/${q}"
 fi

@@ -1,11 +1,11 @@
 {{template "head" "Home"}}
 {{template "searchbox" ""}}
 
-<details class="card">
+{{if .CanWrite}}<details class="card">
   <summary><strong>+ New link</strong></summary>
   <p class="muted" style="margin:8px 0 12px">Use <code>{1}</code>, <code>{id}</code> or <code>{*}</code> in the URL for parameters, e.g. <code>go/pr/123</code>.</p>
   {{template "createform" ""}}
-</details>
+</details>{{end}}
 
 <div class="card">
   <strong>{{len .Links}} links</strong>
@@ -16,9 +16,9 @@
       <td class="key"><a href="/{{.Key}}">{{.Key}}</a></td>
       <td>{{.Desc}}{{range .Tags}}<span class="tag">{{.}}</span>{{end}}{{if .Variants}}<span class="tag">context-aware</span>{{end}}</td>
       <td class="url">{{.URL}}</td>
-      <td class="del"><form method="post" action="/_/links/delete" onsubmit="return confirm('Delete go/{{.Key}}?')">
-          <input type="hidden" name="key" value="{{.Key}}"><button class="ghost" title="Delete">×</button>
-        </form></td>
+      <td class="del">{{if $.CanWrite}}<form method="post" action="/_/links/delete" data-confirm="Delete go/{{.Key}}?">
+          <input type="hidden" name="key" value="{{.Key}}"><button class="ghost" title="Delete go/{{.Key}}" aria-label="Delete go/{{.Key}}">×</button>
+        </form>{{end}}</td>
     </tr>
   {{else}}
     <tr><td class="muted">No links yet. Add one above, or run <code>goli add claude https://claude.ai</code>.</td></tr>

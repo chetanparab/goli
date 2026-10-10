@@ -1,8 +1,10 @@
 package server
 
 import (
+	"context"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -11,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chetanparab/goli/internal/ai"
 	"github.com/chetanparab/goli/internal/config"
 	"github.com/chetanparab/goli/internal/links"
 )
@@ -129,28 +132,153 @@ func TestGuard(t *testing.T) {
 	}
 }
 
+// viaTailnet makes a request look like it arrived on this machine's tailnet address.
+func viaTailnet(remote, host string) func(*http.Request) {
+	return func(r *http.Request) {
+		r.RemoteAddr = remote
+		r.Host = host
+		local := &net.TCPAddr{IP: net.ParseIP("100.109.1.1"), Port: 80}
+		*r = *r.WithContext(context.WithValue(r.Context(), http.LocalAddrContextKey, local))
+	}
+}
+
 func TestAllowTailscale(t *testing.T) {
 	s, _ := newServer(t)
 	s.cfg.Allow = []string{"tailscale"}
-	s.cfg.Hostnames = append(s.cfg.Hostnames, "*.ts.net")
+	s.cfg.Hostnames = append(s.cfg.Hostnames, "*.tail1234.ts.net")
 	h := s.Handler()
-	phone := func(addr, host string) int {
-		return do(h, "GET", "/claude", nil, func(r *http.Request) { r.RemoteAddr = addr; r.Host = host }).Code
-	}
-	if c := phone("100.101.102.103:5000", "go"); c != http.StatusFound {
+	get := func(mod func(*http.Request)) int { return do(h, "GET", "/claude", nil, mod).Code }
+
+	if c := get(viaTailnet("100.101.102.103:5000", "go")); c != http.StatusFound {
 		t.Errorf("tailnet IPv4: %d", c)
 	}
-	if c := phone("[fd7a:115c:a1e0::1]:5000", "go.tail1234.ts.net"); c != http.StatusFound {
+	if c := get(viaTailnet("[fd7a:115c:a1e0::1]:5000", "go.tail1234.ts.net")); c != http.StatusFound {
 		t.Errorf("tailnet IPv6 + MagicDNS name: %d", c)
 	}
-	if c := phone("192.168.1.20:5000", "go"); c != http.StatusForbidden {
+	if c := get(viaTailnet("192.168.1.20:5000", "go")); c != http.StatusForbidden {
 		t.Errorf("LAN device must stay blocked: %d", c)
 	}
-	if c := phone("100.101.102.103:5000", "evil.example.com"); c != http.StatusMisdirectedRequest {
+	if c := get(viaTailnet("100.101.102.103:5000", "evil.example.com")); c != http.StatusMisdirectedRequest {
 		t.Errorf("unknown host: %d", c)
 	}
-	if c := phone("100.101.102.103:5000", "ts.net.evil.com"); c != http.StatusMisdirectedRequest {
-		t.Errorf("suffix trick: %d", c)
+	if c := get(viaTailnet("100.101.102.103:5000", "go.other.ts.net")); c != http.StatusMisdirectedRequest {
+		t.Errorf("someone else's tailnet name: %d", c)
+	}
+	// A 100.64/10 client on a LAN (carrier-grade NAT), not on our tailnet address.
+	if c := get(func(r *http.Request) {
+		r.RemoteAddr = "100.72.1.5:4000"
+		local := &net.TCPAddr{IP: net.ParseIP("192.168.1.10"), Port: 80}
+		*r = *r.WithContext(context.WithValue(r.Context(), http.LocalAddrContextKey, local))
+	}); c != http.StatusForbidden {
+		t.Errorf("CGNAT LAN client: %d", c)
+	}
+}
+
+func TestAllowedNetworksReadOnly(t *testing.T) {
+	s, store := newServer(t)
+	s.cfg.Allow = []string{"tailscale"}
+	body := `{"key":"mail","url":"https://phish.example.com"}`
+	post := func() int {
+		return do(s.Handler(), "POST", "/_/api/links", strings.NewReader(body), func(r *http.Request) {
+			viaTailnet("100.72.1.5:4000", "go")(r)
+			r.Header.Set("Content-Type", "application/json")
+		}).Code
+	}
+	if c := post(); c != http.StatusForbidden {
+		t.Errorf("tailnet write without allow_write: %d", c)
+	}
+	if _, ok := store.Get("mail"); ok {
+		t.Fatal("link was written")
+	}
+	s.cfg.AllowWrite = true
+	if c := post(); c != http.StatusOK {
+		t.Errorf("tailnet write with allow_write: %d", c)
+	}
+}
+
+func TestCrossSiteWritesBlocked(t *testing.T) {
+	s, store := newServer(t)
+	h := s.Handler()
+	form := url.Values{"key": {"x"}, "url": {"https://x.example.com"}}.Encode()
+	cases := map[string]func(*http.Request){
+		"other localhost port": func(r *http.Request) { r.Header.Set("Origin", "http://localhost:3000") },
+		"Sec-Fetch-Site":       func(r *http.Request) { r.Header.Set("Sec-Fetch-Site", "cross-site") },
+		"same-site sibling":    func(r *http.Request) { r.Header.Set("Sec-Fetch-Site", "same-site") },
+	}
+	for name, mod := range cases {
+		w := do(h, "POST", "/_/links", strings.NewReader(form), func(r *http.Request) {
+			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			mod(r)
+		})
+		if w.Code != http.StatusForbidden {
+			t.Errorf("%s: got %d", name, w.Code)
+		}
+	}
+	if _, ok := store.Get("x"); ok {
+		t.Error("cross-site request created a link")
+	}
+}
+
+type countingRanker struct{ calls int }
+
+func (c *countingRanker) Rank(context.Context, string, []*links.Link) ([]ai.Pick, error) {
+	c.calls++
+	return []ai.Pick{{Key: "claude", Confidence: 0.95}}, nil
+}
+
+func TestAIOnlyForUserSearches(t *testing.T) {
+	s, _ := newServer(t)
+	r := &countingRanker{}
+	s.ranker = r
+	h := s.Handler()
+	// Another site embedding <img src="http://go/?..."> must not spend AI calls.
+	do(h, "GET", "/?some%20query", nil, func(req *http.Request) {
+		req.Header.Set("Sec-Fetch-Site", "cross-site")
+		req.Header.Set("Sec-Fetch-Dest", "image")
+	})
+	if r.calls != 0 {
+		t.Fatalf("cross-site request used AI (%d calls)", r.calls)
+	}
+	w := do(h, "GET", "/?chat%20assistant", nil, func(req *http.Request) {
+		req.Header.Set("Sec-Fetch-Site", "none")
+		req.Header.Set("Sec-Fetch-Dest", "document")
+	})
+	if r.calls != 1 || w.Code != http.StatusFound {
+		t.Fatalf("typed search: calls=%d code=%d", r.calls, w.Code)
+	}
+	do(h, "GET", "/?chat%20assistant", nil, nil)
+	if r.calls != 1 {
+		t.Errorf("repeat search should be cached, calls=%d", r.calls)
+	}
+}
+
+func TestLimitsAndHeaders(t *testing.T) {
+	s, _ := newServer(t)
+	h := s.Handler()
+	if w := do(h, "GET", "/"+strings.Repeat("a", 2000), nil, nil); w.Code != http.StatusRequestURITooLong {
+		t.Errorf("long path: %d", w.Code)
+	}
+	w := do(h, "GET", "/", nil, nil)
+	if !strings.Contains(w.Header().Get("Content-Security-Policy"), "frame-ancestors 'none'") ||
+		w.Header().Get("X-Frame-Options") != "DENY" {
+		t.Errorf("missing anti-framing headers: %v", w.Header())
+	}
+	if strings.Contains(w.Body.String(), "onsubmit") {
+		t.Error("inline handler would be blocked by CSP")
+	}
+}
+
+func TestWebEditKeepsVariants(t *testing.T) {
+	s, store := newServer(t)
+	store.Put(&links.Link{Key: "dash", URL: "https://prod.example.com", Desc: "Dashboard",
+		Variants: []links.Variant{{When: map[string]string{"env": "dev"}, URL: "http://localhost:3000"}}})
+	form := url.Values{"key": {"dash"}, "url": {"https://prod2.example.com"}}.Encode()
+	do(s.Handler(), "POST", "/_/links", strings.NewReader(form), func(r *http.Request) {
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	})
+	l, _ := store.Get("dash")
+	if l.URL != "https://prod2.example.com" || len(l.Variants) != 1 || l.Desc != "Dashboard" {
+		t.Errorf("edit dropped fields: %+v", l)
 	}
 }
 

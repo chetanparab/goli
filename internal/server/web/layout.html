@@ -55,12 +55,12 @@ td.key,td{overflow-wrap:anywhere}
 <header><a class="logo" href="/">go<b>li</b></a><span class="muted">your short links</span></header>
 {{end}}
 
-{{define "foot"}}</main></body></html>{{end}}
+{{define "foot"}}</main><script src="/_/app.js"></script></body></html>{{end}}
 
 {{define "searchbox"}}
 <form class="search" action="/_/search" method="get">
   <input type="hidden" name="go" value="1">
-  <input type="search" name="q" value="{{.}}" placeholder="claude, sutra/gh, or describe what you need…" autofocus
+  <input type="search" name="q" value="{{.}}" placeholder="a key like docs, or describe what you need…" autofocus
     autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go">
   <button type="submit">Go</button>
 </form>

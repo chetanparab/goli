@@ -60,11 +60,12 @@ func Install(binary string, env map[string]string) error {
 	<key>RunAtLoad</key><true/>
 	<key>KeepAlive</key><true/>
 	<key>ProcessType</key><string>Background</string>
+	<key>Umask</key><integer>63</integer>
 	<key>StandardOutPath</key><string>%s</string>
 	<key>StandardErrorPath</key><string>%s</string>
 </dict>
 </plist>
-`, Label, html.EscapeString(binary), envXML, LogPath(), LogPath())
+`, Label, html.EscapeString(binary), envXML, html.EscapeString(LogPath()), html.EscapeString(LogPath()))
 	if err := os.WriteFile(path, []byte(plist), 0o644); err != nil {
 		return err
 	}
@@ -84,15 +85,6 @@ func Uninstall() error {
 	_ = exec.Command("launchctl", "bootout", domain()+"/"+Label).Run()
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		return err
-	}
-	return nil
-}
-
-// Restart kicks the running agent so it picks up a new binary or config.
-func Restart() error {
-	out, err := exec.Command("launchctl", "kickstart", "-k", domain()+"/"+Label).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("launchctl kickstart: %w: %s", err, out)
 	}
 	return nil
 }

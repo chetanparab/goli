@@ -18,8 +18,9 @@ const DefaultAPIModel = "claude-opus-5-5"
 
 // API ranks links with the Claude API.
 type API struct {
-	client anthropic.Client
-	model  string
+	client   anthropic.Client
+	model    string
+	sendURLs string
 }
 
 // NewAPI returns an API ranker. Credentials come from ANTHROPIC_API_KEY or an
@@ -36,7 +37,7 @@ func (r *API) Rank(ctx context.Context, query string, all []*links.Link) ([]Pick
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	cat, known := catalog(all)
+	cat, known := catalog(all, r.sendURLs)
 	resp, err := r.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(r.model),
 		MaxTokens: 4096,
