@@ -162,3 +162,31 @@ func TestClientFilterParse(t *testing.T) {
 		t.Error("bad entry should fail")
 	}
 }
+
+func TestSearchBoxOpensKeysDirectly(t *testing.T) {
+	s, _ := newServer(t)
+	h := s.Handler()
+	for _, q := range []string{"claude", "go/claude", "CLAUDE"} {
+		w := do(h, "GET", "/_/search?go=1&q="+url.QueryEscape(q), nil, nil)
+		if w.Code != http.StatusFound || w.Header().Get("Location") != "https://claude.ai" {
+			t.Errorf("q=%q: %d %s", q, w.Code, w.Header().Get("Location"))
+		}
+	}
+	// Without go=1 it's a normal results page.
+	if w := do(h, "GET", "/_/search?q=claude", nil, nil); w.Code != http.StatusOK {
+		t.Errorf("plain search: %d", w.Code)
+	}
+}
+
+func TestAssets(t *testing.T) {
+	s, _ := newServer(t)
+	h := s.Handler()
+	for _, a := range []string{"icon-180.png", "icon-512.png", "icon.svg", "manifest.webmanifest"} {
+		if w := do(h, "GET", "/_/"+a, nil, nil); w.Code != 200 || w.Body.Len() == 0 {
+			t.Errorf("%s: %d", a, w.Code)
+		}
+	}
+	if w := do(h, "GET", "/_/secret", nil, nil); w.Code != 404 {
+		t.Errorf("unknown asset: %d", w.Code)
+	}
+}

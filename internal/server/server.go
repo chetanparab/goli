@@ -21,8 +21,16 @@ import (
 	"github.com/chetanparab/goli/internal/match"
 )
 
-//go:embed web/*.html
+//go:embed web/*.html web/*.png web/icon.svg web/manifest.webmanifest
 var webFS embed.FS
+
+// assets are static files served under /_/.
+var assets = map[string]string{
+	"icon-180.png":         "image/png",
+	"icon-512.png":         "image/png",
+	"icon.svg":             "image/svg+xml",
+	"manifest.webmanifest": "application/manifest+json",
+}
 
 var tmpl = template.Must(template.New("").Funcs(template.FuncMap{
 	"pct": func(f float64) int { return int(f*100 + 0.5) },
@@ -53,6 +61,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /_/health", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("ok\n")) })
 	mux.HandleFunc("GET /_/search", s.handleSearch)
+	mux.HandleFunc("GET /_/{asset}", serveAsset)
 	mux.HandleFunc("GET /_/api/links", s.apiList)
 	mux.HandleFunc("POST /_/api/links", s.apiPut)
 	mux.HandleFunc("DELETE /_/api/links/{key...}", s.apiDelete)
@@ -169,8 +178,37 @@ func searchQuery(r *http.Request) string {
 	return strings.TrimSpace(q)
 }
 
+func serveAsset(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("asset")
+	ctype, ok := assets[name]
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	data, err := webFS.ReadFile("web/" + name)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", ctype)
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.Write(data) // #nosec G705 -- embedded file from the fixed assets allowlist
+}
+
+// handleSearch serves the search box. With go=1 (the home page and app box)
+// it behaves like the address bar: an exact key or key/args opens directly,
+// and a confident search result opens too.
 func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
-	s.search(w, r, strings.TrimSpace(r.URL.Query().Get("q")), r.URL.Query().Get("lucky") == "1")
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	direct := r.URL.Query().Get("go") == "1"
+	if direct && q != "" && !strings.ContainsAny(q, " \t") {
+		path := strings.TrimPrefix(strings.TrimPrefix(q, "go/"), "/")
+		if res, err := s.store.Resolve(path, nil, s.context(r)); err == nil {
+			http.Redirect(w, r, res.URL, http.StatusFound)
+			return
+		}
+	}
+	s.search(w, r, q, direct || r.URL.Query().Get("lucky") == "1")
 }
 
 type searchResult struct {

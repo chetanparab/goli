@@ -4,7 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.}} · goli</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23e8590c'/></svg>">
+<link rel="icon" href="/_/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/_/icon-180.png">
+<link rel="manifest" href="/_/manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="go/">
+<meta name="theme-color" content="#e8590c">
 <style>
 :root{--bg:#fbfaf8;--fg:#1d1b18;--muted:#6f6a63;--line:#e7e3dd;--card:#fff;--accent:#e8590c;--accent-fg:#fff;--ok:#2b8a3e;--warn:#b35c00}
 @media (prefers-color-scheme:dark){:root{--bg:#141311;--fg:#ece9e4;--muted:#9a948b;--line:#2c2a26;--card:#1c1b18;--accent:#ff7a2e;--accent-fg:#141311;--ok:#69db7c;--warn:#ffa94d}}
@@ -39,7 +43,12 @@ td.url{word-break:break-all;color:var(--muted);font-size:.9em}
 .bar span{display:block;height:100%;background:var(--accent);border-radius:2px}
 .notice{border-left:3px solid var(--ok);padding:6px 12px;margin-bottom:16px}
 .notice.warn{border-color:var(--warn)}
-@media (max-width:600px){.grid{grid-template-columns:1fr}td.url{display:none}}
+summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}
+table{table-layout:fixed}
+td.key{width:26%}td.del{width:40px;text-align:right}
+td.key,td{overflow-wrap:anywhere}
+@media (min-width:601px){td.key{width:18%}td.url{width:34%}}
+@media (max-width:600px){.grid{grid-template-columns:1fr}td.url{display:none}td.key{white-space:normal}}
 </style>
 </head>
 <body><main>
@@ -50,8 +59,10 @@ td.url{word-break:break-all;color:var(--muted);font-size:.9em}
 
 {{define "searchbox"}}
 <form class="search" action="/_/search" method="get">
-  <input type="search" name="q" value="{{.}}" placeholder="Search links, or describe what you need…" autofocus>
-  <button type="submit">Search</button>
+  <input type="hidden" name="go" value="1">
+  <input type="search" name="q" value="{{.}}" placeholder="claude, sutra/gh, or describe what you need…" autofocus
+    autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go">
+  <button type="submit">Go</button>
 </form>
 {{end}}
 

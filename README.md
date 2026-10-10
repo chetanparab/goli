@@ -62,6 +62,12 @@ Phones can't edit `/etc/hosts`, but [Tailscale](https://tailscale.com) (free for
    ```
 4. Restart the server (`goli install` again, or `goli serve`), then open `http://go/` on the phone once.
 
+**On iPhone**, Safari searches anything without a dot, so `go/claude` typed in the address bar becomes a Google search. Instead:
+
+- **Home Screen app (best):** open `http://go/` in Safari → Share → **Add to Home Screen**. Tap the `go/` icon, type `claude` and press Go. Exact keys open straight away, and descriptions like "cloudflare dashboard" work too.
+- **Type the full address:** `http://go/claude` always works.
+- **Siri:** make a Shortcut with *Ask for Input* → *URL* `http://go/[Provided Input]` → *Open URLs*, and name it "go".
+
 Only devices on your tailnet are let in; everything else on your Wi-Fi is still refused. The computer has to be awake for links to work: on macOS, add `keep_awake: true` to stop idle sleep while it's plugged in (closing the lid still sleeps it unless an external display is attached). Links that point to `localhost` open on the phone's own localhost, so they're only useful on the computer.
 
 ## Links file
