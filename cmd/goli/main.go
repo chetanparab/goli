@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -467,6 +468,12 @@ func cmdDoctor(cfg *config.Config, store *links.Store) error {
 	}
 	ok(up, "server answering on port "+port, "goli install   (or goli serve to run it in the foreground; logs: "+launchd.LogPath()+")")
 
+	if allowsTailscale(cfg.Allow) {
+		name, err := tailscaleName()
+		ok(err == nil && strings.HasPrefix(name, "go."), "Tailscale: this Mac is "+orNone(name, err),
+			"install Tailscale (brew install --cask tailscale-app), sign in, then rename this machine to \"go\" in the admin console")
+	}
+
 	switch {
 	case !cfg.AI.Enabled:
 		fmt.Println("· AI search disabled in config.yaml")
@@ -487,4 +494,46 @@ func cmdDoctor(cfg *config.Config, store *links.Store) error {
 		ok(in, msg, "run `claude auth login` in a terminal")
 	}
 	return nil
+}
+
+func allowsTailscale(allow []string) bool {
+	for _, a := range allow {
+		if strings.EqualFold(strings.TrimSpace(a), "tailscale") {
+			return true
+		}
+	}
+	return false
+}
+
+// tailscaleName returns this machine's MagicDNS name, e.g. "go.tail1234.ts.net".
+func tailscaleName() (string, error) {
+	bin, err := exec.LookPath("tailscale")
+	if err != nil {
+		bin = "/Applications/Tailscale.app/Contents/MacOS/Tailscale"
+		if _, statErr := os.Stat(bin); statErr != nil {
+			return "", errors.New("tailscale not installed")
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, bin, "status", "--json").Output()
+	if err != nil {
+		return "", errors.New("tailscale not running or not signed in")
+	}
+	var st struct {
+		Self struct {
+			DNSName string `json:"DNSName"`
+		} `json:"Self"`
+	}
+	if err := json.Unmarshal(out, &st); err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(st.Self.DNSName, "."), nil
+}
+
+func orNone(name string, err error) string {
+	if err != nil {
+		return err.Error()
+	}
+	return name
 }

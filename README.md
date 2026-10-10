@@ -49,6 +49,21 @@ Then open **http://go/** once. After the first visit, browsers accept plain `go/
 
 **Why port 80 on all interfaces?** Browsers request `http://go/` on port 80. macOS lets a normal user bind port 80 only on all interfaces (`:80`), not on `127.0.0.1`. goli therefore listens on `:80` but refuses any request that doesn't come from loopback, so nothing is exposed to your network. To avoid this, set `listen: "127.0.0.1:8080"` and forward port 80 yourself with `pf`.
 
+### Use go/ on your phone (Tailscale)
+
+Phones can't edit `/etc/hosts`, but [Tailscale](https://tailscale.com) (free for personal use) gives your devices a private network with its own DNS:
+
+1. Install Tailscale on the computer running goli and on your phone, signed in to the same account.
+2. In the Tailscale admin console, rename the computer to `go` (MagicDNS must be on, which is the default).
+3. In `~/.config/goli/config.yaml`:
+   ```yaml
+   hostnames: [go, localhost, 127.0.0.1, "*.ts.net"]
+   allow: [tailscale]
+   ```
+4. Restart the server (`goli install` again, or `goli serve`), then open `http://go/` on the phone once.
+
+Only devices on your tailnet are let in; everything else on your Wi-Fi is still refused. The computer has to be awake for links to work. Links that point to `localhost` open on the phone's own localhost, so they're only useful on the computer.
+
 ## Links file
 
 `~/.config/goli/links.yaml` (see [`examples/links.yaml`](examples/links.yaml)):
@@ -145,7 +160,7 @@ Set `ai.enabled: false` to keep everything offline; local fuzzy search still wor
 
 ## Security model
 
-- Requests are accepted only from loopback addresses.
+- Requests are accepted only from loopback addresses, plus any networks you list in `allow` (e.g. your tailnet).
 - The `Host` header must be one of `hostnames`, which blocks DNS-rebinding attacks from web pages.
 - Writes require a same-origin `Origin` (form) or a JSON body (API), so other sites can't create or delete links.
 - Only `http(s)://` destinations are allowed, and redirects are never cached (`302` + `no-store`), so editing a link takes effect immediately.

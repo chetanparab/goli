@@ -128,3 +128,37 @@ func TestGuard(t *testing.T) {
 		t.Errorf("non-JSON API write: %d", w.Code)
 	}
 }
+
+func TestAllowTailscale(t *testing.T) {
+	s, _ := newServer(t)
+	s.cfg.Allow = []string{"tailscale"}
+	s.cfg.Hostnames = append(s.cfg.Hostnames, "*.ts.net")
+	h := s.Handler()
+	phone := func(addr, host string) int {
+		return do(h, "GET", "/claude", nil, func(r *http.Request) { r.RemoteAddr = addr; r.Host = host }).Code
+	}
+	if c := phone("100.101.102.103:5000", "go"); c != http.StatusFound {
+		t.Errorf("tailnet IPv4: %d", c)
+	}
+	if c := phone("[fd7a:115c:a1e0::1]:5000", "go.tail1234.ts.net"); c != http.StatusFound {
+		t.Errorf("tailnet IPv6 + MagicDNS name: %d", c)
+	}
+	if c := phone("192.168.1.20:5000", "go"); c != http.StatusForbidden {
+		t.Errorf("LAN device must stay blocked: %d", c)
+	}
+	if c := phone("100.101.102.103:5000", "evil.example.com"); c != http.StatusMisdirectedRequest {
+		t.Errorf("unknown host: %d", c)
+	}
+	if c := phone("100.101.102.103:5000", "ts.net.evil.com"); c != http.StatusMisdirectedRequest {
+		t.Errorf("suffix trick: %d", c)
+	}
+}
+
+func TestClientFilterParse(t *testing.T) {
+	if _, err := newClientFilter([]string{"10.0.0.5", "192.168.0.0/16", "::1", "tailscale"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := newClientFilter([]string{"not-an-ip"}); err == nil {
+		t.Error("bad entry should fail")
+	}
+}

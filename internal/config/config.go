@@ -31,8 +31,12 @@ type AI struct {
 type Config struct {
 	// Listen is the address the server binds. See README for why the default is ":80".
 	Listen string `yaml:"listen"`
-	// Hostnames are the Host header values the server accepts (DNS-rebinding protection).
+	// Hostnames are the Host header values the server accepts (DNS-rebinding
+	// protection). An entry like "*.ts.net" matches any subdomain.
 	Hostnames []string `yaml:"hostnames"`
+	// Allow lists extra client networks besides this machine: CIDRs, IPs, or
+	// "tailscale" for your tailnet (100.64.0.0/10 and fd7a:115c:a1e0::/48).
+	Allow []string `yaml:"allow,omitempty"`
 	// LinksFile overrides the location of links.yaml.
 	LinksFile string             `yaml:"links_file,omitempty"`
 	AI        AI                 `yaml:"ai"`
@@ -117,6 +121,11 @@ listen: ":80"
 hostnames: [go, localhost, 127.0.0.1]
 
 # links_file: ~/code/goli-links/links.yaml
+
+# Let your other devices use go/ too, e.g. your phone over Tailscale.
+# Requests from anywhere else are still refused.
+# allow: [tailscale]
+# hostnames: [go, localhost, 127.0.0.1, "*.ts.net"]
 
 ai:
   enabled: true

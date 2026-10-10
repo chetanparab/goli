@@ -62,30 +62,32 @@ func (s *Server) Handler() http.Handler {
 	return s.guard(mux)
 }
 
-// guard only allows requests from this machine, addressed to a known
-// hostname (blocks DNS rebinding), and rejects cross-site writes.
+// guard only allows requests from this machine (or networks listed in
+// allow), addressed to a known hostname (blocks DNS rebinding), and rejects
+// cross-site writes.
 func (s *Server) guard(next http.Handler) http.Handler {
-	allowed := map[string]bool{}
-	for _, h := range s.cfg.Hostnames {
-		allowed[strings.ToLower(h)] = true
+	clients, err := newClientFilter(s.cfg.Allow)
+	if err != nil {
+		s.log.Error("ignoring allow setting", "err", err)
 	}
+	hosts := newHostMatcher(s.cfg.Hostnames)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
 			host = r.RemoteAddr
 		}
-		if ip := net.ParseIP(host); ip == nil || !ip.IsLoopback() {
-			http.Error(w, "goli only answers requests from this machine", http.StatusForbidden)
+		if !clients.allowed(net.ParseIP(host)) {
+			http.Error(w, "goli only answers requests from this machine and allowed networks", http.StatusForbidden)
 			return
 		}
-		if !allowed[hostOnly(r.Host)] {
+		if !hosts.match(r.Host) {
 			http.Error(w, "unknown host", http.StatusMisdirectedRequest)
 			return
 		}
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
 			if o := r.Header.Get("Origin"); o != "" {
 				u, err := url.Parse(o)
-				if err != nil || !allowed[hostOnly(u.Host)] {
+				if err != nil || !hosts.match(u.Host) {
 					http.Error(w, "cross-site request blocked", http.StatusForbidden)
 					return
 				}
