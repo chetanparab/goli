@@ -1,11 +1,11 @@
 name: Deploy site
 
-# Publishes site/ to Cloudflare Pages (project "goli"),
-# served at https://goli.theanalogyarchitect.com.
+# Publishes site/ as static assets on Cloudflare Workers (worker "goli", see
+# wrangler.jsonc), served at https://goli.theanalogyarchitect.com.
 on:
   push:
     branches: [main]
-    paths: ["site/**", "tools/deploy/**", ".github/workflows/site.yml"]
+    paths: ["site/**", "tools/**", "wrangler.jsonc", ".github/workflows/site.yml"]
   workflow_dispatch:
 
 concurrency:
@@ -35,12 +35,12 @@ jobs:
       # because this is the step that holds the Cloudflare token.
       - name: Install Wrangler from the lockfile
         run: npm ci --prefix tools/deploy --no-audit --no-fund
-      - name: Deploy site/ to Cloudflare Pages
+      - name: Deploy site/ to Cloudflare
         if: env.HAS_CLOUDFLARE == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: tools/deploy/node_modules/.bin/wrangler pages deploy site --project-name goli --branch main --commit-dirty=true
+        run: tools/deploy/node_modules/.bin/wrangler deploy
       - name: No Cloudflare credentials yet
         if: env.HAS_CLOUDFLARE != 'true'
-        run: echo "::notice title=Deploy skipped::Add CLOUDFLARE_API_TOKEN (Pages → Edit only) and CLOUDFLARE_ACCOUNT_ID as Actions secrets to publish."
+        run: echo "::notice title=Deploy skipped::Add CLOUDFLARE_API_TOKEN (Workers Scripts → Edit only) and CLOUDFLARE_ACCOUNT_ID as Actions secrets to publish."
