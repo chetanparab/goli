@@ -1,17 +1,18 @@
 # goli
 
-**Short links for everything you use.** Type `go/claude` in your browser and land on Claude. Type `go/?that doc with the q3 plans` and goli finds it for you.
+**The internet, on first-name terms.** Type `go/standup` and land in your 10 am meeting. Type `go/?the sheet with the goa trip budget` and goli finds it for you.
 
 **Website:** [goli.theanalogyarchitect.com](https://goli.theanalogyarchitect.com) · part of [The Analogy Architect](https://www.theanalogyarchitect.com)
 
 goli ("go links", and yes, *goli dena* 😉) is a single static binary that runs a tiny redirect server on your machine, plus a CLI to open, search and manage links from the terminal.
 
 ```text
-go/claude                 → https://claude.ai
-go/gh/goli/issues         → https://github.com/chetanparab/goli/issues
-go/jira/ABC-123           → https://acme.atlassian.net/browse/ABC-123
+go/standup                → https://meet.google.com/abc-defg-hij
+go/payslip                → https://hr.acme.in/ess/v2/payroll/statements
+go/pr/482                 → https://github.com/acme/app/pull/482
+go/flight/6E-2134         → live status for any flight number
 go/roadmp                 → "did you mean go/roadmap?" + one-click create
-go/?cloudflare workers    → AI search across your links
+go/?goa trip budget       → AI search across your links (opt-in)
 go/dashboard              → staging or prod, depending on your context
 ```
 
@@ -24,7 +25,7 @@ go/dashboard              → staging or prod, depending on your context
 | **Semantic search** | Opt-in: `go/?words` asks Claude (via your Claude Code login, or the API) which link you mean and jumps straight there when it's sure. Without AI, fast local fuzzy search does the job. |
 | **Parameters** | `{1}`, `{name}`, `{*}` placeholders, or just add path segments: `go/gh/owner/repo`. |
 | **Context-aware links** | One key, different destinations by environment (`goli ctx set env=staging`), network (home/office/VPN), time of day or weekday. |
-| **Terminal & launcher** | `goli claude` opens a link without the server; `goli find …` searches; a Raycast script command is included. |
+| **Terminal & launcher** | `goli standup` opens a link without the server; `goli find …` searches; a Raycast script command is included. |
 | **Private by default** | The server only answers your own machine (and devices you allow), and refuses DNS rebinding, cross-site writes, framing and other sites triggering searches. |
 
 ## Install
@@ -47,7 +48,7 @@ goli doctor             # verify everything
 
 `goli hosts` prints a `sudo tee` command for you to run rather than asking you to run goli itself as root.
 
-Then open **http://go/** once. After the first visit, browsers accept plain `go/claude` in the address bar.
+Then open **http://go/** once. After the first visit, browsers accept plain `go/standup` in the address bar.
 
 > **Browser notes.** Chrome and Edge may treat `go/x` as a search until they've seen `http://go/` once. In Firefox, set `browser.fixup.domainwhitelist.go` to `true` in `about:config`. Safari works best with `http://go/x`.
 
@@ -86,10 +87,10 @@ Phones can't edit `/etc/hosts`, but [Tailscale](https://tailscale.com) (free for
    ```
 4. Restart the server (`goli install` again, or `goli serve`), then open `http://go/` on the phone once.
 
-**On iPhone**, Safari searches anything without a dot, so `go/claude` typed in the address bar becomes a Google search. Instead:
+**On iPhone**, Safari searches anything without a dot, so `go/standup` typed in the address bar becomes a Google search. Instead:
 
-- **Home Screen app (best):** open `http://go/` in Safari → Share → **Add to Home Screen**. Tap the `go/` icon, type `claude` and press Go. Exact keys open straight away, and descriptions like "cloudflare dashboard" work too.
-- **Type the full address:** `http://go/claude` always works.
+- **Home Screen app (best):** open `http://go/` in Safari → Share → **Add to Home Screen**. Tap the `go/` icon, type `standup` and press Go. Exact keys open straight away, and descriptions like "payroll page" work too.
+- **Type the full address:** `http://go/standup` always works.
 - **Siri:** make a Shortcut with *Ask for Input* → *URL* `http://go/[Provided Input]` → *Open URLs*, and name it "go".
 
 Only devices on your tailnet are let in, and only when the connection arrives on this machine's tailnet address; everything else on your Wi-Fi is still refused. Allowed devices can open and search links but not change them unless you set `allow_write: true`. If you put a reverse proxy (or `tailscale serve`) in front of goli, its traffic looks local to goli, so keep that in mind. The computer has to be awake for links to work: on macOS, add `keep_awake: true` to stop idle sleep while it's plugged in (closing the lid still sleeps it unless an external display is attached). Links that point to `localhost` open on the phone's own localhost, so they're only useful on the computer.
@@ -99,7 +100,7 @@ Only devices on your tailnet are let in, and only when the connection arrives on
 `~/.config/goli/links.yaml` (see [`examples/links.yaml`](examples/links.yaml)):
 
 ```yaml
-claude: https://claude.ai                         # short form
+standup: https://meet.google.com/abc-defg-hij    # short form
 roadmap:                                          # full form
   url: https://docs.example.com/roadmap
   desc: Product roadmap and quarterly plans       # desc + tags improve search
@@ -120,7 +121,7 @@ Resolution rules:
 
 1. The longest key that prefixes the path wins (`go/team/wiki/Page` → `team/wiki` + `/Page`).
 2. Placeholders consume the remaining segments; with no placeholders, segments are appended to the URL path.
-3. Query parameters are forwarded (`go/claude?q=hi`), except `ctx.*` which override context for that request.
+3. Query parameters are forwarded (`go/search?q=hi`), except `ctx.*` which override context for that request.
 4. For context-aware links, the first variant whose `when` conditions all match wins.
 
 `when` conditions: `env`/any variable (`a|b` for either), `network`, `hours` (`"09-18"`, wraps midnight), `days` (`"mon-fri"`, `"sat,sun"`).
@@ -189,8 +190,8 @@ With AI off, everything stays on your machine; local fuzzy search still works, a
 
 ## Integrations
 
-- **Raycast**: add [`integrations/raycast`](integrations/raycast) as a Script Commands directory, then type `go/` → `claude`, or `?search words`.
-- **Shell**: `alias g=goli` → `g claude`.
+- **Raycast**: add [`integrations/raycast`](integrations/raycast) as a Script Commands directory, then type `go/` → `standup`, or `?search words`.
+- **Shell**: `alias g=goli` → `g standup`.
 
 ## Security model
 

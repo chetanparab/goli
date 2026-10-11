@@ -105,7 +105,7 @@ footer a{color:var(--ink-soft)}
 
 {{define "createform"}}
 <form method="post" action="/_/links" class="grid">
-  <input name="key" value="{{.}}" placeholder="key, e.g. claude" aria-label="Key" required pattern="[a-z0-9][a-z0-9._\-]*(/[a-z0-9._\-]+)*">
+  <input name="key" value="{{.}}" placeholder="key, e.g. standup" aria-label="Key" required pattern="[a-z0-9][a-z0-9._\-]*(/[a-z0-9._\-]+)*">
   <input name="url" type="url" placeholder="https://…" aria-label="URL" required>
   <input name="desc" placeholder="description (helps search)" aria-label="Description">
   <input name="tags" placeholder="tags, comma separated" aria-label="Tags">

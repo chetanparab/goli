@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Not found — goli</title>
-<meta name="description" content="This page doesn't exist.">
-
+<meta name="description" content="This page does not exist.">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0B0B0D">
 <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/icon-180.png">
 <link rel="preload" href="/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fraunces-italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/hanken.woff2" as="font" type="font/woff2" crossorigin>
 <script src="/assets/theme.js"></script>
 <link rel="stylesheet" href="/assets/site.css">
@@ -19,14 +19,14 @@
 <a class="skip" href="#main">Skip to content</a>
 <div class="wrap">
   <header class="topbar">
-    <a href="/" class="brand-stack" aria-label="goli — home">
-      <span class="brand-name">go<b>/</b>li</span>
-      <span class="powered">Powered by The Analogy Architect</span>
+    <a href="/" class="brand" aria-label="goli — home">
+      <span class="wordmark">go<i>/</i>li</span>
+      <span class="byline">by The Analogy Architect</span>
     </a>
     <div class="top-right">
       <nav class="nav" aria-label="Site">
         <a href="/">Home</a>
-        <a href="/details">Details</a>
+        <a href="/details">How it works</a>
         <a href="https://github.com/chetanparab/goli" rel="noopener">GitHub</a>
       </nav>
       <button type="button" id="themeBtn" class="theme-btn" title="Toggle theme" aria-label="Toggle theme">
@@ -37,9 +37,11 @@
   </header>
 
   <main id="main">
-    <p class="kicker">404</p>
-    <h1>This link took a <em>goli</em>.</h1>
-    <p class="sub">The page you asked for isn't here. Try the <a href="/">home page</a> or the <a href="/details">details</a>.</p>
+    <section class="hero" aria-labelledby="hero-title">
+      <p class="eyebrow"><b>404</b></p>
+      <h1 class="display" id="hero-title">This page <em>gave you the goli.</em></h1>
+      <p class="lede">It isn't here. Head back <a href="/">home</a>, or read <a href="/details">how goli works</a>.</p>
+    </section>
   </main>
 
   <footer class="footer">

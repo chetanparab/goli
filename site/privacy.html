@@ -6,6 +6,20 @@
 <title>Privacy — goli · The Analogy Architect</title>
 <meta name="description" content="goli's privacy notice: this website collects nothing, and the goli app keeps your links on your own machine.">
 <link rel="canonical" href="https://goli.theanalogyarchitect.com/privacy">
+<meta property="og:site_name" content="goli · The Analogy Architect">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://goli.theanalogyarchitect.com/privacy">
+<meta property="og:title" content="Privacy — goli">
+<meta property="og:description" content="Type go/standup, land in your meeting. Short names for the pages you open every day. Open source, on your own machine.">
+<meta property="og:image" content="https://goli.theanalogyarchitect.com/og/goli-2026-10.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="goli wordmark above the line: The internet, on first-name terms. An address bar reads go/standup.">
+<meta property="og:locale" content="en_IN">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Privacy — goli">
+<meta name="twitter:description" content="Type go/standup, land in your meeting. Short names for the pages you open every day. Open source, on your own machine.">
+<meta name="twitter:image" content="https://goli.theanalogyarchitect.com/og/goli-2026-10.png">
 <meta name="theme-color" content="#0B0B0D">
 <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/icon-180.png">
@@ -18,14 +32,14 @@
 <a class="skip" href="#main">Skip to content</a>
 <div class="wrap">
   <header class="topbar">
-    <a href="/" class="brand-stack" aria-label="goli — home">
-      <span class="brand-name">go<b>/</b>li</span>
-      <span class="powered">Powered by The Analogy Architect</span>
+    <a href="/" class="brand" aria-label="goli — home">
+      <span class="wordmark">go<i>/</i>li</span>
+      <span class="byline">by The Analogy Architect</span>
     </a>
     <div class="top-right">
       <nav class="nav" aria-label="Site">
         <a href="/">Home</a>
-        <a href="/details">Details</a>
+        <a href="/details">How it works</a>
         <a href="https://github.com/chetanparab/goli" rel="noopener">GitHub</a>
       </nav>
       <button type="button" id="themeBtn" class="theme-btn" title="Toggle theme" aria-label="Toggle theme">
@@ -36,17 +50,31 @@
   </header>
 
   <main id="main">
-    <p class="kicker">Privacy</p>
-    <h1>Nothing to track</h1>
-    <p class="sub">Short version: this website collects nothing, and goli keeps your links on your own machine.</p>
-    <h3>This website</h3>
-    <p>goli.theanalogyarchitect.com is a few static pages. There are no cookies, no analytics, no ads, no trackers and no forms. Fonts are served from this site, so your browser doesn't contact Google either. Your light/dark choice is saved in your browser's local storage and never leaves it. Like any website, our host (Cloudflare) processes basic request data such as IP addresses to deliver pages and stop abuse.</p>
-    <h3>The goli app</h3>
-    <p>goli runs on your computer. Your links, settings and logs stay there, in files only your user can read. goli has no account and sends no telemetry. The server answers only your own machine and devices you explicitly allow.</p>
-    <p>The one exception is <strong>AI search, which is off by default</strong>. If you turn it on, each search sends your query and a summary of your links (names, descriptions, tags and the host name of each link — configurable) to the AI provider you chose: Anthropic, either through your own Claude Code login or the Claude API. Their privacy terms apply to that data. Opening links never calls AI.</p>
-    <h3>Questions</h3>
-    <p>Open an issue on <a href="https://github.com/chetanparab/goli/issues" rel="noopener">GitHub</a>, or reach out via <a href="https://www.theanalogyarchitect.com">The Analogy Architect</a>.</p>
-    <p class="meta">Last updated 10 October 2026.</p>
+    <section class="hero" aria-labelledby="hero-title">
+      <p class="eyebrow"><b>Privacy</b></p>
+      <h1 class="display" id="hero-title">Nothing <em>to track.</em></h1>
+      <p class="lede">This website collects nothing, and goli keeps your links on your own machine.</p>
+    </section>
+    <section class="section" id="site" aria-labelledby="site-h">
+      <div class="section-head"><span class="num">i.</span><h2 class="title" id="site-h">This <em>website</em></h2></div>
+      <div class="body">
+        <p>goli.theanalogyarchitect.com is a few static pages. There are no cookies, no analytics, no ads, no trackers and no forms. Fonts are served from this site, so your browser doesn't contact Google either. Your light/dark choice stays in your browser's local storage. Like any website, our host (Cloudflare) processes basic request data such as IP addresses to deliver pages and stop abuse.</p>
+      </div>
+    </section>
+    <section class="section" id="app" aria-labelledby="app-h">
+      <div class="section-head"><span class="num">ii.</span><h2 class="title" id="app-h">The goli <em>app</em></h2></div>
+      <div class="body">
+        <p>goli runs on your computer. Your links, settings and logs stay there, in files only your user can read. There is no account and no telemetry, and the server answers only your own machine and devices you explicitly allow.</p>
+        <p>The one exception is <strong>AI search, which is off by default</strong>. If you turn it on, each search sends your query and a summary of your links (names, descriptions, tags and each link's host name — configurable) to Anthropic, through your own Claude Code login or the Claude API. Their privacy terms apply to that data. Opening links never calls AI.</p>
+      </div>
+    </section>
+    <section class="section" id="contact" aria-labelledby="contact-h">
+      <div class="section-head"><span class="num">iii.</span><h2 class="title" id="contact-h"><em>Questions</em></h2></div>
+      <div class="body">
+        <p>Open an issue on <a href="https://github.com/chetanparab/goli/issues" rel="noopener">GitHub</a>, or reach out through <a href="https://www.theanalogyarchitect.com">The Analogy Architect</a>.</p>
+        <p class="fine">Last updated 11 October 2026.</p>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">

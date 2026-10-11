@@ -2,7 +2,7 @@
 # links_file in config.yaml at a git checkout (links as code).
 
 # Short form: key -> url
-claude: https://claude.ai
+standup: https://meet.google.com/abc-defg-hij   # your daily meeting
 gh: https://github.com          # go/gh/owner/repo appends the path
 
 # Full form: description and tags make search work better
