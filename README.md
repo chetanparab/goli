@@ -221,7 +221,7 @@ make lint     # go vet + golangci-lint
 make run      # build and serve in the foreground
 ```
 
-The project website lives in [`site/`](site) (plain HTML/CSS, no build step) and deploys to Cloudflare (Workers static assets, see `wrangler.jsonc`) from `.github/workflows/site.yml`. Check it with `node tools/check-site.mjs site`.
+The project website lives in [`site/`](site) (plain HTML/CSS, no build step) and deploys to Cloudflare (Workers static assets, see `wrangler.jsonc`) from `.github/workflows/site.yml`. Check it with `node tools/check-site.mjs site`; `tools/stamp-site.sh` version-stamps the CSS/JS links before a deploy.
 
 ## License
 

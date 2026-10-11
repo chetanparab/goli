@@ -30,6 +30,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
+      - name: Version-stamp CSS/JS so browsers fetch the new ones
+        run: tools/stamp-site.sh
       - name: Check the site (local links, no inline code)
         run: node tools/check-site.mjs site
       # Wrangler and every dependency are pinned by a lockfile with integrity hashes,
