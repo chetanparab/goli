@@ -10,7 +10,7 @@ builds:
     mod_timestamp: "{{ .CommitTimestamp }}"
 archives:
   - formats: [tar.gz]
-    files: [LICENSE, README.md, integrations/**/*]
+    files: [LICENSE, THIRD_PARTY_NOTICES.md, README.md, integrations/**/*]
 checksum:
   name_template: checksums.txt
 changelog:

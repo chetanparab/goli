@@ -25,6 +25,8 @@ go run ./cmd/goli serve
 - Keep PRs focused; one change per PR.
 - Add or update tests for behaviour changes. `make test` and `make lint` must pass.
 - Update `README.md` when you change user-facing behaviour or config.
+- Adding or upgrading a dependency? Run `make notices` and commit `THIRD_PARTY_NOTICES.md`. New dependencies must use a licence compatible with MIT (MIT, BSD, Apache-2.0, ISC, …).
+- By contributing, you agree your contribution is licensed under the project's MIT License.
 - Never add real personal links, tokens or hostnames to examples or tests; use `example.com`.
 
 ## Reporting security issues

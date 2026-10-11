@@ -225,4 +225,4 @@ The project website lives in [`site/`](site) (plain HTML/CSS, no build step) and
 
 ## License
 
-[MIT](LICENSE)
+goli is released under the [MIT License](LICENSE). Its binaries include third-party software (the Go runtime, a few MIT/BSD/Apache-2.0 libraries, and the OFL-licensed Fraunces and Hanken Grotesk fonts) whose notices are reproduced in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). After changing dependencies, run `make notices`.
