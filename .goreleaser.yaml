@@ -10,6 +10,9 @@ builds:
     mod_timestamp: "{{ .CommitTimestamp }}"
 archives:
   - formats: [tar.gz]
+    # Stable names, so https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_arm64.tar.gz
+    # always points at the newest release.
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     files: [LICENSE, THIRD_PARTY_NOTICES.md, README.md, integrations/**/*]
 checksum:
   name_template: checksums.txt

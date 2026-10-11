@@ -21,6 +21,7 @@
 <meta name="twitter:description" content="Type go/standup, land in your meeting. Short names for the pages you open every day. Open source, on your own machine.">
 <meta name="twitter:image" content="https://goli.theanalogyarchitect.com/og/goli-2026-10.png">
 <meta name="theme-color" content="#0B0B0D">
+<meta name="color-scheme" content="dark light">
 <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/icon-180.png">
 <link rel="preload" href="/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
@@ -71,9 +72,8 @@
       <div class="body">
         <h3>macOS</h3>
         <ol class="steps">
-          <li>Build and install (needs <a href="https://go.dev/dl/" rel="noopener">Go 1.25+</a>), or download a binary from the <a href="https://github.com/chetanparab/goli/releases" rel="noopener">releases page</a>.
-            <pre data-copy><code><span class="p">$ </span>git clone https://github.com/chetanparab/goli &amp;&amp; cd goli
-<span class="p">$ </span>make install</code></pre></li>
+          <li>Install goli (needs <a href="https://go.dev/dl/" rel="noopener">Go 1.25+</a>), or download a binary from the <a href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">latest release</a>.
+            <pre data-copy><code><span class="p">$ </span>go install github.com/chetanparab/goli/cmd/goli@latest</code></pre></li>
           <li>Map <code>go</code> to this machine: <code>goli hosts</code> prints a single <code>sudo tee</code> command to run. goli never asks to run itself as root.</li>
           <li>Start it at login with <code>goli install</code>, then check everything with <code>goli doctor</code>.</li>
           <li>Open <code>http://go/</code> once. After that, plain <code>go/standup</code> works in Chrome, Edge and Firefox.</li>

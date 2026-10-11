@@ -28,6 +28,18 @@ for (const pre of document.querySelectorAll("pre[data-copy]")) {
   pre.appendChild(b);
 }
 
+// Inline copy buttons (the install one-liner).
+for (const b of document.querySelectorAll("[data-copy-target]")) {
+  b.addEventListener("click", async () => {
+    const text = document.getElementById(b.dataset.copyTarget).textContent.trim();
+    try {
+      await navigator.clipboard.writeText(text);
+      b.textContent = "Copied";
+      setTimeout(() => (b.textContent = "Copy"), 1500);
+    } catch (e) { b.textContent = "Select & copy"; }
+  });
+}
+
 // The hero address bar: types an example, shows where it lands, moves on.
 const typed = document.getElementById("typed");
 const dest = document.getElementById("dest");

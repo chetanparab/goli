@@ -11,7 +11,7 @@ const problems = [];
 for (const page of pages) {
   const html = readFileSync(join(root, page), "utf8");
   const where = (msg) => problems.push(`${page}: ${msg}`);
-  if (/<script(?![^>]*\bsrc=)[^>]*>/i.test(html)) where("inline <script>");
+  if (/<script(?![^>]*\b(src=|type="application\/ld\+json"))[^>]*>/i.test(html)) where("inline <script>");
   if (/<style[\s>]/i.test(html) || /\sstyle="/i.test(html)) where("inline style");
   if (/\son[a-z]+="/i.test(html)) where("inline event handler");
   if (!/<title>[^<]+<\/title>/.test(html)) where("missing <title>");

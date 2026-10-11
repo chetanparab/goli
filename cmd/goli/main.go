@@ -18,6 +18,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -34,8 +35,19 @@ import (
 	"github.com/chetanparab/goli/internal/server"
 )
 
-// version is set at build time with -ldflags "-X main.version=...".
+// version is set at build time with -ldflags "-X main.version=...". Builds
+// from `go install …@vX.Y.Z` don't pass ldflags, so fall back to the module
+// version recorded in the binary.
 var version = "dev"
+
+func init() {
+	if version != "dev" {
+		return
+	}
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		version = info.Main.Version
+	}
+}
 
 const usage = `goli — short links for everything you use. Type go/<key> in your browser.
 

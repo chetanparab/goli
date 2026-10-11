@@ -21,6 +21,17 @@
 <meta name="twitter:description" content="Type go/standup, land in your meeting. Short names for the pages you open every day. Open source, on your own machine.">
 <meta name="twitter:image" content="https://goli.theanalogyarchitect.com/og/goli-2026-10.png">
 <meta name="theme-color" content="#0B0B0D">
+<meta name="color-scheme" content="dark light">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"goli",
+ "description":"Personal go/ short links on your own machine: typo rescue, search by meaning, context-aware links, links as code.",
+ "url":"https://goli.theanalogyarchitect.com/","applicationCategory":"DeveloperApplication","operatingSystem":"macOS, Linux",
+ "license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,
+ "offers":{"@type":"Offer","price":"0","priceCurrency":"INR"},
+ "softwareHelp":"https://goli.theanalogyarchitect.com/details",
+ "author":{"@type":"Organization","name":"The Analogy Architect","url":"https://www.theanalogyarchitect.com"},
+ "sameAs":["https://github.com/chetanparab/goli"]}
+</script>
 <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/icon-180.png">
 <link rel="preload" href="/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
@@ -52,27 +63,55 @@
 
   <main id="main">
     <section class="hero" aria-labelledby="hero-title">
-      <p class="eyebrow"><b>Open source</b> &nbsp;·&nbsp; runs on your machine</p>
-      <h1 class="display" id="hero-title">The internet, <em>on first-name terms.</em></h1>
-      <p class="lede">goli turns the pages you open every day into short names you can type — <code>go/standup</code>, <code>go/budget</code>, <code>go/itr</code> — from your browser, your terminal or your phone. Your links, your laptop, nobody else's server.</p>
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow"><b>Open source</b> &nbsp;·&nbsp; runs on your machine</p>
+          <h1 class="display" id="hero-title">The internet, <em>on first-name terms.</em></h1>
+          <p class="lede">goli turns the pages you open every day into short names you can type — <code>go/standup</code>, <code>go/budget</code>, <code>go/itr</code> — from your browser, your terminal or your phone.</p>
 
-      <div class="omnibox" aria-hidden="true">
-        <div class="omnibox-bar"><span class="omnibox-dot"></span><span class="omnibox-text"><span class="go">go/</span><span id="typed">standup</span><span class="caret"></span></span></div>
-        <div class="omnibox-dest" id="dest"><span class="arrow">↳</span><span><span class="url" id="dest-url">meet.google.com/abc-defg-hij</span> &nbsp;<span id="dest-note">your 10 am stand-up</span></span></div>
-      </div>
-      <ul class="sr-only">
-        <li>go/standup opens your daily meeting link</li>
-        <li>go/budget opens the household budget spreadsheet</li>
-        <li>go/pr/482 opens pull request 482</li>
-        <li>go/flight/6E-2134 opens live status for any flight number</li>
-        <li>go/itr opens the income tax e-filing portal</li>
-      </ul>
+          <div class="omnibox" aria-hidden="true">
+            <div class="omnibox-bar"><span class="omnibox-dot"></span><span class="omnibox-text"><span class="go">go/</span><span id="typed">standup</span><span class="caret"></span></span></div>
+            <div class="omnibox-dest" id="dest"><span class="arrow">↳</span><span><span class="url" id="dest-url">meet.google.com/abc-defg-hij</span> &nbsp;<span id="dest-note">your 10 am stand-up</span></span></div>
+          </div>
+          <ul class="sr-only">
+            <li>go/standup opens your daily meeting link</li>
+            <li>go/budget opens the household budget spreadsheet</li>
+            <li>go/pr/482 opens pull request 482</li>
+            <li>go/flight/6E-2134 opens live status for any flight number</li>
+            <li>go/itr opens the income tax e-filing portal</li>
+          </ul>
 
-      <div class="actions">
-        <a class="btn" href="https://github.com/chetanparab/goli" rel="noopener">Get goli on GitHub <span aria-hidden="true">→</span></a>
-        <a class="link" href="/details">How it works</a>
+          <div class="install" aria-label="Install command"><span class="p" aria-hidden="true">$</span><code id="install-cmd">go install github.com/chetanparab/goli/cmd/goli@latest</code><button type="button" class="copy-inline" data-copy-target="install-cmd">Copy</button></div>
+          <p class="downloads">Needs Go 1.25+. Or download for <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_arm64.tar.gz">Mac (Apple silicon)</a> · <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_amd64.tar.gz">Mac (Intel)</a> · <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_linux_amd64.tar.gz">Linux</a> · <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_linux_arm64.tar.gz">Linux ARM</a></p>
+
+          <div class="actions">
+            <a class="btn" href="#start">Get started <span aria-hidden="true">↓</span></a>
+            <a class="link" href="https://github.com/chetanparab/goli" rel="noopener">View on GitHub</a>
+            <a class="link" href="/details">How it works</a>
+          </div>
+          <p class="fine">MIT licensed &nbsp;·&nbsp; macOS &amp; Linux &nbsp;·&nbsp; no account, no cloud</p>
+        </div>
+
+        <div class="hero-visual">
+          <div class="phone" role="img" aria-label="goli on an iPhone Home Screen: a search box and a list of links — standup, budget, itr, flight, pr">
+            <div class="phone-screen">
+              <div class="phone-island"></div>
+              <div class="phone-status"><span>9:41</span><span>●●●</span></div>
+              <div class="app-top"><span class="app-mark">go<i>/</i>li</span><span class="app-sub">your short links</span></div>
+              <div class="app-search"><span class="app-input">a key, or describe it…</span><span class="app-go">Go</span></div>
+              <div class="app-card">
+                <div class="app-row"><span class="k">standup</span><span class="d">Daily stand-up<span class="h">meet.google.com</span></span></div>
+                <div class="app-row"><span class="k">budget</span><span class="d">Household budget<span class="h">docs.google.com</span></span></div>
+                <div class="app-row"><span class="k">itr</span><span class="d">Income tax e-filing<span class="h">incometax.gov.in</span></span></div>
+                <div class="app-row"><span class="k">flight</span><span class="d">Flight status, any number<span class="h">flightradar24.com</span></span></div>
+                <div class="app-row"><span class="k">pr</span><span class="d">Pull requests, by number<span class="h">github.com</span></span></div>
+                <div class="app-row"><span class="k">wifi</span><span class="d">Guest Wi-Fi details<span class="h">notes.example.com</span></span></div>
+              </div>
+              <div class="phone-home"></div>
+            </div>
+          </div>
+        </div>
       </div>
-      <p class="fine">MIT licensed &nbsp;·&nbsp; macOS &amp; Linux &nbsp;·&nbsp; one small binary &nbsp;·&nbsp; no account</p>
     </section>
 
     <section class="section" aria-labelledby="s1">
@@ -85,7 +124,21 @@
     </section>
 
     <section class="section" aria-labelledby="s2">
-      <div class="section-head"><span class="num">ii.</span><h2 class="title" id="s2">A day with <em>goli</em></h2></div>
+      <div class="section-head"><span class="num">ii.</span><h2 class="title" id="s2">Why not just <em>bookmarks?</em></h2></div>
+      <div class="versus">
+        <table>
+          <tr><th>Bookmarks</th><th>goli</th></tr>
+          <tr><td>Click through menus and folders</td><td>Type two words, in any tab</td></tr>
+          <tr><td>Live inside one browser</td><td>Work in every browser, the terminal and your phone</td></tr>
+          <tr><td>Point at one fixed page</td><td>Take arguments: <code>go/pr/482</code>, <code>go/flight/6E-2134</code></td></tr>
+          <tr><td>Need the exact name</td><td>Forgive typos, and (if you like) understand descriptions</td></tr>
+          <tr><td>Hard to share or review</td><td>One plain text file you can keep in git</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="s3">
+      <div class="section-head"><span class="num">iii.</span><h2 class="title" id="s3">A day with <em>goli</em></h2></div>
       <ol class="day">
         <li><time>09:58</time><div class="what"><span class="cmd">go/<b>standup</b></span><span class="why">Two minutes to the meeting. No hunting through the calendar invite.</span></div></li>
         <li><time>11:20</time><div class="what"><span class="cmd">go/<b>pr</b>/482</span><span class="why">A teammate pings a PR number. You type the number.</span></div></li>
@@ -96,32 +149,82 @@
       </ol>
     </section>
 
-    <section class="section" aria-labelledby="s3">
-      <div class="section-head"><span class="num">iii.</span><h2 class="title" id="s3">Small tool, <em>careful details</em></h2></div>
+    <section class="section" aria-labelledby="s4">
+      <div class="section-head"><span class="num">iv.</span><h2 class="title" id="s4">What you'll <em>see</em></h2></div>
+      <div class="see">
+        <figure>
+          <div class="window" role="img" aria-label="Browser showing goli's page for go/roadmp: it doesn't exist yet, did you mean go/roadmap, with a button to create it">
+            <div class="window-bar"><i></i><i></i><i></i><span class="window-url">go/roadmp</span></div>
+            <div class="window-body">
+              <p class="window-title">go/roadmp doesn't exist yet</p>
+              <p class="window-label">Did you mean</p>
+              <div class="suggest"><span class="k">go/roadmap</span><span class="h">notion.so</span></div>
+              <div class="suggest"><span class="k">go/report</span><span class="h">docs.google.com</span></div>
+              <span class="window-btn">Create go/roadmp</span>
+            </div>
+          </div>
+          <figcaption><b>In the browser.</b> Typos get suggestions, and new names can be created on the spot.</figcaption>
+        </figure>
+        <figure>
+<pre class="term" role="img" aria-label="Terminal: goli find budget lists the budget sheet first; goli flight/6E-2134 prints the flight status URL"><span class="p">$</span> goli find budget
+<span class="m"> 96%</span>  <span class="k">budget</span>   Household budget
+<span class="m"> 41%</span>  <span class="k">itr</span>      Income tax e-filing
+
+<span class="p">$</span> goli flight/6E-2134
+https://www.flightradar24.com/data/flights/6e2134
+
+<span class="p">$</span> goli check
+<span class="m">✓</span> 24 links ok   <span class="m">✗</span> 1 broken: <span class="k">oldwiki</span></pre>
+          <figcaption><b>In the terminal.</b> Open, search, add and health-check links without leaving the keyboard.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="s5">
+      <div class="section-head"><span class="num">v.</span><h2 class="title" id="s5">Small tool, <em>careful details</em></h2></div>
       <ol class="principles">
         <li><h3>Typos forgiven</h3><p>A wrong name shows the closest matches, and a missing one can be created right there on the page.</p></li>
         <li><h3>Search by meaning</h3><p>Opt in, and <code>go/?</code> plus a description finds the link you meant, then opens it when it's sure.</p></li>
         <li><h3>One name, many places</h3><p><code>go/dashboard</code> can open staging at work and prod on call — by environment, network or time of day.</p></li>
         <li><h3>Links you can review</h3><p>Everything lives in one readable file. Keep it in git, review changes, and let <code>goli check</code> catch dead links.</p></li>
         <li><h3>Everywhere you are</h3><p>The address bar, the terminal, Raycast — and your phone, through a private Tailscale network.</p></li>
-        <li><h3>Nobody else's server</h3><p>No account, no cloud, no tracking. goli answers only your own devices, and AI stays off until you switch it on.</p></li>
+        <li><h3>Built to be trusted</h3><p>Security-reviewed before release, strict by default, and every release is built in the open with signed provenance you can verify.</p></li>
       </ol>
     </section>
 
-    <section class="section" aria-labelledby="s4">
-      <div class="section-head"><span class="num">iv.</span><h2 class="title" id="s4">Yours, <em>entirely</em></h2></div>
-      <p class="manifesto">Your links live in one file, on your machine. No sign-up, no sync service, no analytics — <em>just the shortest way back</em> to the pages that matter.</p>
+    <section class="section" aria-labelledby="s6">
+      <div class="section-head"><span class="num">vi.</span><h2 class="title" id="s6">Yours, <em>entirely</em></h2></div>
+      <p class="manifesto">Your links live in one file, on your machine. No sign-up, no sync service, no analytics — and AI stays off until you switch it on. <em>Just the shortest way back</em> to the pages that matter.</p>
     </section>
 
-    <section class="section" aria-labelledby="s5">
-      <div class="section-head"><span class="num">v.</span><h2 class="title" id="s5">Up in <em>a minute</em></h2></div>
+    <section class="section" aria-labelledby="s7">
+      <div class="section-head"><span class="num">vii.</span><h2 class="title" id="s7">How it <em>compares</em></h2></div>
+      <div class="table-wrap">
+        <table class="compare-table">
+          <tr><th></th><th class="us">goli</th><th>tailscale/golink</th><th>Trotto</th><th>GoLinks</th></tr>
+          <tr><td>Built for</td><td class="us">One person</td><td>A team on Tailscale</td><td>Teams</td><td>Companies</td></tr>
+          <tr><td>Runs on</td><td class="us">Your own computer</td><td>A node on your tailnet</td><td>Your server, or theirs</td><td>Their cloud</td></tr>
+          <tr><td>Sign-in</td><td class="us">None</td><td>Tailscale</td><td>Google account</td><td>Company account</td></tr>
+          <tr><td>Open source</td><td class="us">Yes (MIT)</td><td>Yes</td><td>Yes</td><td>No</td></tr>
+          <tr><td>Your links live in</td><td class="us">A text file you own</td><td>Its database</td><td>Its database</td><td>Their service</td></tr>
+        </table>
+      </div>
+      <p class="after-table">Running links for a whole team? Those tools are great at it. goli is for the links that are yours — and it adds a few personal touches: typo rescue, search by meaning, context-aware links and a proper terminal command.</p>
+    </section>
+
+    <section class="section" id="start" aria-labelledby="s8">
+      <div class="section-head"><span class="num">viii.</span><h2 class="title" id="s8">Up in <em>a minute</em></h2></div>
       <div class="body">
-        <pre data-copy><code><span class="p">$ </span>git clone https://github.com/chetanparab/goli &amp;&amp; cd goli
-<span class="p">$ </span>make install      <span class="c"># builds goli into ~/.local/bin</span>
-<span class="p">$ </span>goli hosts        <span class="c"># prints one command that maps go → this machine</span>
-<span class="p">$ </span>goli install      <span class="c"># starts goli at login</span>
-<span class="p">$ </span>goli add standup https://meet.google.com/abc-defg-hij</code></pre>
-        <p>Open <code>http://go/</code> once, then type <code>go/standup</code>. Linux, phones and AI search are covered in <a href="/details">how it works</a>.</p>
+        <ol class="steps">
+          <li><strong>Install goli</strong> — with Go, or grab a <a href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">prebuilt download</a>.
+            <pre data-copy><code><span class="p">$ </span>go install github.com/chetanparab/goli/cmd/goli@latest</code></pre></li>
+          <li><strong>Point <code>go/</code> at your machine.</strong> <code>goli hosts</code> prints the one command to run; <code>goli install</code> starts goli at login.
+            <pre data-copy><code><span class="p">$ </span>goli hosts
+<span class="p">$ </span>goli install</code></pre></li>
+          <li><strong>Add your first link</strong>, then type <code>go/standup</code> in your browser.
+            <pre data-copy><code><span class="p">$ </span>goli add standup https://meet.google.com/abc-defg-hij</code></pre></li>
+        </ol>
+        <p>Linux, phones and AI search are covered in <a href="/details">how it works</a>.</p>
       </div>
     </section>
   </main>
