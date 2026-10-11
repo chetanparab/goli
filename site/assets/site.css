@@ -34,10 +34,12 @@ code,.mono{font-family:var(--mono);font-size:.86em}
 
 /* ── top bar ───────────────────────────────────────────── */
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:1px solid var(--line)}
-.brand{display:flex;align-items:baseline;gap:14px;text-decoration:none;color:var(--ink)}
-.wordmark{font:400 26px/1 var(--serif);letter-spacing:-.03em}
+.brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.wordmark{font:400 26px/1 var(--serif);letter-spacing:-.03em;color:var(--ink);text-decoration:none}
+.wordmark:hover{color:var(--ink)}
 .wordmark i{font-style:normal;color:var(--accent-fill)}
-.byline{font:400 11px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
+.byline{font:400 11px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);text-decoration:none;border-bottom:1px solid transparent;padding-bottom:2px;transition:color .2s,border-color .2s}
+.byline:hover{color:var(--ink);border-color:var(--accent-fill)}
 .top-right{display:flex;align-items:center;gap:6px}
 .nav a{font:400 14px var(--sans);color:var(--ink-soft);text-decoration:none;padding:6px 10px}
 .nav a:hover,.nav a[aria-current="page"]{color:var(--ink)}
@@ -362,7 +364,9 @@ details p{color:var(--ink-soft);margin:10px 0 0}
   .fl-code{font-size:34px}
   .fl-meta{gap:18px;flex-wrap:wrap}
   .wrap{padding:20px 20px 0}
-  .nav,.byline{display:none}
+  .nav{display:none}
+  .brand{gap:10px}
+  .byline{font-size:9.5px;letter-spacing:.12em}
   .section{padding-top:64px}
   .section-head{grid-template-columns:1fr;gap:8px}
   .body,.compare,.principles,.manifesto,.toc,.see,.versus,.table-wrap,.after-table{margin-left:0}
