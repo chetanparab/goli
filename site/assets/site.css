@@ -26,7 +26,7 @@ body{background:var(--paper);color:var(--ink);font:300 17px/1.7 var(--sans);-web
 a{color:inherit;text-decoration-color:var(--accent-fill);text-underline-offset:3px}
 a:hover{color:var(--accent)}
 ::selection{background:var(--accent-fill);color:#141414}
-.wrap{max-width:1040px;margin:0 auto;padding:28px 28px 0}
+.wrap{max-width:1200px;margin:0 auto;padding:28px 28px 0}
 .narrow{max-width:720px}
 .skip{position:absolute;left:-999px}.skip:focus{left:16px;top:12px;background:var(--surface);padding:6px 10px;border-radius:8px;z-index:9}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -208,9 +208,24 @@ details p{color:var(--ink-soft);margin:10px 0 0}
 .hero.centered .actions{justify-content:center;margin-top:32px}
 .hero.centered .eyebrow{margin-bottom:22px}
 
+/* ── first screen: pitch + live demo ───────────────────── */
+.hero-stage{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);gap:56px;align-items:center;padding:clamp(36px,6vh,72px) 0 24px}
+.pitch .display{font-size:clamp(40px,5.2vw,68px);max-width:10ch}
+.pitch .lede{margin-top:22px;font-size:18px}
+.pitch .actions{margin-top:30px}
+.demo-col{min-width:0;position:relative}
+.demo-col::before{content:"";position:absolute;inset:-60px -40px 30% -40px;z-index:-1;pointer-events:none;
+  background:radial-gradient(60% 55% at 55% 40%,var(--glow),transparent 75%)}
+.steps-live{list-style:none;display:flex;justify-content:center;gap:8px 26px;flex-wrap:wrap;padding:0;margin:18px 0 0;font:400 13.5px var(--sans);color:var(--ink-faint)}
+.steps-live li{display:flex;align-items:center;gap:8px;transition:color .25s}
+.steps-live span{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font:500 11.5px var(--sans);transition:all .25s}
+.steps-live li.on{color:var(--ink)}
+.steps-live li.on span{background:var(--accent-fill);border-color:var(--accent-fill);color:#141414}
+.steps-live li.done span{border-color:var(--accent-fill);color:var(--accent)}
+
 /* ── the browser demo ──────────────────────────────────── */
 .stage{max-width:980px;margin:0 auto}
-.browser{border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden;
+.browser{border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);border-radius:16px;background:var(--surface);overflow:hidden;
   box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 50px 100px -50px rgba(0,0,0,.55),0 0 160px -60px var(--glow)}
 .b-top{display:flex;align-items:flex-end;gap:14px;padding:10px 14px 0;background:var(--code-bg)}
 .b-dots{display:flex;gap:7px;padding-bottom:12px}
@@ -236,7 +251,7 @@ details p{color:var(--ink-soft);margin:10px 0 0}
 .b-key.on{opacity:1}
 .b-progress{height:2px;background:var(--accent-fill);width:0;opacity:0}
 .b-progress.run{opacity:1;width:100%;transition:width .65s cubic-bezier(.3,.6,.2,1)}
-.b-page{position:relative;height:380px;background:var(--paper);overflow:hidden}
+.b-page{position:relative;height:360px;background:var(--paper);overflow:hidden}
 .pg{position:absolute;inset:0;padding:30px 36px;opacity:0;transform:translateY(6px);transition:opacity .35s ease,transform .35s ease;pointer-events:none}
 .pg.on{opacity:1;transform:none}
 .pg-title{font:400 24px/1.25 var(--serif);letter-spacing:-.015em;margin:0 0 6px}
@@ -285,13 +300,14 @@ details p{color:var(--ink-soft);margin:10px 0 0}
 .g-why{font:400 12.5px var(--sans);color:var(--ink-soft)}
 
 /* example picker under the browser */
-.scenes{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:22px 0 0}
-.scene{font:400 14px var(--sans);color:var(--ink-soft);background:none;border:1px solid var(--line);border-radius:999px;padding:8px 16px;cursor:pointer;
+.scenes{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:4px 0 0}
+.scene{font:400 13px var(--sans);color:var(--ink-soft);background:none;border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;
   transition:color .2s,border-color .2s,background-color .2s}
 .scene:hover{color:var(--ink);border-color:var(--ink-soft)}
 .scene[aria-selected="true"]{color:var(--ink);border-color:var(--accent-fill);background:color-mix(in srgb,var(--accent-fill) 8%,transparent)}
-.scene code{font-size:.86em;color:var(--accent)}
-.scene-caption{text-align:center;font:300 17px/1.6 var(--sans);color:var(--ink-soft);margin:16px auto 0;max-width:40em;min-height:1.6em}
+.scene code{font-size:12.5px;color:var(--ink-soft);background:none;border:0;padding:0}
+.scene[aria-selected="true"] code,.scene:hover code{color:var(--accent)}
+.scene-caption{text-align:center;font:300 16px/1.55 var(--sans);color:var(--ink-soft);margin:12px auto 0;max-width:40em;min-height:3.1em}
 
 /* ── phone + terminal sections ─────────────────────────── */
 .split{margin-left:140px;display:grid;grid-template-columns:300px minmax(0,1fr);gap:56px;align-items:center}
@@ -318,12 +334,27 @@ details p{color:var(--ink-soft);margin:10px 0 0}
 .t-caret{display:inline-block;width:7px;height:1.1em;background:#FF6B35;vertical-align:-.2em;animation:blink 1.05s steps(1) infinite}
 
 /* ── small screens ─────────────────────────────────────── */
+@media (max-width:1020px){
+  .hero-stage{grid-template-columns:minmax(0,1fr);gap:28px;padding-top:28px}
+  .pitch{text-align:center}
+  .pitch .display{max-width:none;font-size:clamp(36px,8vw,56px)}
+  .pitch .lede{margin:16px auto 0;max-width:34em;font-size:17px}
+  .pitch .actions{justify-content:center;margin-top:22px}
+}
 @media (max-width:900px){
   .split,.split.wide-first{margin-left:0;grid-template-columns:minmax(0,1fr);justify-items:center;gap:36px}
   .split .term{width:100%}
 }
 @media (max-width:760px){
-  .b-page{height:420px}
+  .hide-sm{display:none}
+  .hero-stage{padding-top:18px;gap:22px}
+  .pitch .eyebrow{margin-bottom:14px}
+  .pitch .lede{font-size:16px}
+  .pitch .actions{margin-top:18px}
+  .pitch .fine{margin-top:12px}
+  .b-page{height:360px}
+  .pg-meet .meet-video{aspect-ratio:16/9}
+  .steps-live{gap:6px 16px;font-size:12.5px}
   .pg{padding:22px 20px}
   .pg-meet{grid-template-columns:1fr;gap:14px}
   .b-nav,.b-dots,.b-key{display:none}

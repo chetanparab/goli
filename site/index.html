@@ -37,8 +37,8 @@
 <link rel="preload" href="/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/fraunces-italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/hanken.woff2" as="font" type="font/woff2" crossorigin>
-<script src="/assets/theme.js?v=8d6e2e6c35"></script>
-<link rel="stylesheet" href="/assets/site.css?v=8d6e2e6c35">
+<script src="/assets/theme.js?v=45db51a192"></script>
+<link rel="stylesheet" href="/assets/site.css?v=45db51a192">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -50,9 +50,8 @@
     </a>
     <div class="top-right">
       <nav class="nav" aria-label="Site">
-        <a href="#demo">See it</a>
-        <a href="#start">Install</a>
         <a href="/details">How it works</a>
+        <a href="#start">Install</a>
         <a href="https://github.com/chetanparab/goli" rel="noopener">GitHub</a>
       </nav>
       <button type="button" id="themeBtn" class="theme-btn" title="Toggle theme" aria-label="Toggle theme">
@@ -63,18 +62,19 @@
   </header>
 
   <main id="main">
-    <section class="hero centered" aria-labelledby="hero-title">
-      <p class="eyebrow"><b>Open source</b> &nbsp;·&nbsp; free &nbsp;·&nbsp; runs on your computer</p>
-      <h1 class="display" id="hero-title">The internet, <em>on first&#8209;name&nbsp;terms.</em></h1>
-      <p class="lede">Give any page a short name. Then type <code>go/</code> and the name in your browser — on your laptop or your phone — and you're there.</p>
-      <div class="actions">
-        <a class="btn" id="dl-btn" href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">Download goli <span aria-hidden="true">↓</span></a>
-        <a class="link" href="#start">Other ways to install</a>
+    <section class="hero-stage" id="demo" aria-labelledby="hero-title">
+      <div class="pitch">
+        <p class="eyebrow"><b>Open source</b> &nbsp;·&nbsp; free<span class="hide-sm"> &nbsp;·&nbsp; runs on your computer</span></p>
+        <h1 class="display" id="hero-title">The internet, <em>on first&#8209;name&nbsp;terms.</em></h1>
+        <p class="lede">Give any page a short name. Type <code>go/</code> and the name in any browser — on your laptop or your phone — and you're there.</p>
+        <div class="actions">
+          <a class="btn" id="dl-btn" href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">Download goli <span aria-hidden="true">↓</span></a>
+          <a class="link" href="#start">Other ways to install</a>
+        </div>
+        <p class="fine" id="dl-note">Free &amp; open source &nbsp;·&nbsp; macOS, Windows &amp; Linux &nbsp;·&nbsp; no account</p>
       </div>
-      <p class="fine" id="dl-note">Free &amp; open source &nbsp;·&nbsp; macOS, Windows &amp; Linux &nbsp;·&nbsp; no account</p>
-    </section>
 
-    <section class="stage" id="demo" aria-label="goli in a web browser">
+      <div class="demo-col" aria-label="goli in a web browser">
       <div class="browser" id="browser">
         <div class="b-top" aria-hidden="true">
           <span class="b-dots"><i></i><i></i><i></i></span>
@@ -125,17 +125,23 @@
           </div>
         </div>
       </div>
-      <div class="scenes" role="tablist" aria-label="Try an example">
-        <button class="scene" role="tab" aria-selected="true" data-scene="0">Join a meeting <code>go/standup</code></button>
-        <button class="scene" role="tab" aria-selected="false" data-scene="1">Open a PR <code>go/pr/482</code></button>
-        <button class="scene" role="tab" aria-selected="false" data-scene="2">Make a typo <code>go/roadmp</code></button>
-        <button class="scene" role="tab" aria-selected="false" data-scene="3">Track a flight <code>go/flight/6E-2134</code></button>
-        <button class="scene" role="tab" aria-selected="false" data-scene="4">Describe it <code>go/?q3 sales</code></button>
+        <ol class="steps-live" aria-hidden="true">
+          <li id="st-type"><span>1</span>Type the short name</li>
+          <li id="st-enter"><span>2</span>Press Enter</li>
+          <li id="st-land"><span>3</span>You're there</li>
+        </ol>
+        <p class="scene-caption" id="scene-caption" aria-live="polite">Type <b>go/standup</b> — land in your 10 am meeting. No digging through calendar invites.</p>
+        <div class="scenes" role="tablist" aria-label="Try an example">
+          <button class="scene" role="tab" aria-selected="true" data-scene="0" aria-label="Meeting example"><code>go/standup</code></button>
+          <button class="scene" role="tab" aria-selected="false" data-scene="1" aria-label="Pull request example"><code>go/pr/482</code></button>
+          <button class="scene" role="tab" aria-selected="false" data-scene="2" aria-label="Typo example"><code>go/roadmp</code></button>
+          <button class="scene" role="tab" aria-selected="false" data-scene="3" aria-label="Flight example"><code>go/flight/6E-2134</code></button>
+          <button class="scene" role="tab" aria-selected="false" data-scene="4" aria-label="Search example"><code>go/?q3 sales</code></button>
+        </div>
       </div>
-      <p class="scene-caption" id="scene-caption" aria-live="polite">Type <b>go/standup</b> — land in your 10 am meeting. No digging through calendar invites.</p>
     </section>
 
-    <section class="section" aria-labelledby="s1">
+    <section class="section" id="phone-demo" aria-labelledby="s1">
       <div class="section-head"><span class="num">i.</span><h2 class="title" id="s1">Same links, <em>on your phone</em></h2></div>
       <div class="split">
         <div class="phone" id="phone" aria-hidden="true">
@@ -280,6 +286,6 @@ go/pr → https://github.com/acme/app/pull/{1}
     </div>
   </footer>
 </div>
-<script src="/assets/site.js?v=8d6e2e6c35"></script>
+<script src="/assets/site.js?v=45db51a192"></script>
 </body>
 </html>

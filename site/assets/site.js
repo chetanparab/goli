@@ -91,6 +91,12 @@ if (browser) {
   const gate = visibilityGate(browser);
   let run = 0; // bumps whenever a new sequence starts; older ones stop
 
+  const steps = ["st-type", "st-enter", "st-land"].map((id) => $(id));
+  const step = (n) => steps.forEach((el, i) => {
+    if (!el) return;
+    el.classList.toggle("on", i === n);
+    el.classList.toggle("done", i < n);
+  });
   const showPage = (name) => pages.forEach((p) => p.classList.toggle("on", p.dataset.page === name));
   const select = (i) => tabs.forEach((t, n) => t.setAttribute("aria-selected", String(n === i)));
 
@@ -104,6 +110,7 @@ if (browser) {
     fav.className = "b-fav " + s.fav;
     showPage(s.page);
     caption.innerHTML = s.caption;
+    step(2);
   }
 
   async function play(i, id) {
@@ -113,6 +120,7 @@ if (browser) {
     await gate();
     if (id !== run) return;
     // Click the address bar: the current URL gets selected…
+    step(0);
     omni.classList.add("focus");
     url.classList.add("sel");
     await sleep(450);
@@ -129,7 +137,8 @@ if (browser) {
     await sleep(300);
     if (id !== run) return;
     key.classList.add("on");
-    await sleep(380);
+    step(1);
+    await sleep(420);
     if (id !== run) return;
     bar.classList.remove("run");
     void bar.offsetWidth; // restart the transition
@@ -155,7 +164,10 @@ if (browser) {
     const i = Number(t.dataset.scene);
     if (reduced) { ++run; play(i, run); } else { loop(i); }
   }));
-  if (reduced) { land(scenes[0]); select(0); } else { setTimeout(() => loop(0), 900); }
+  // First paint already shows goli at work; the typing loop picks up from there.
+  land(scenes[0]);
+  select(0);
+  if (!reduced) setTimeout(() => loop(1), 2800);
 }
 
 // ── 2. The phone demo ──────────────────────────────────────────────────────
