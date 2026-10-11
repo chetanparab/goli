@@ -38,11 +38,11 @@ const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion:
 if (typed && dest && !reduced) {
   const examples = [
     ["standup", "meet.google.com/abc-defg-hij", "your 10 am stand-up"],
-    ["payslip", "hr.acme.in/ess/v2/payroll/…", "five clicks deep, now zero"],
+    ["budget", "docs.google.com/spreadsheets/d/1xQ7…", "no more digging through Drive"],
     ["pr/482", "github.com/acme/app/pull/482", "any pull request, by number"],
     ["flight/6E-2134", "flightradar24.com/data/flights/6e2134", "one template, any flight"],
     ["itr", "incometax.gov.in", "the real portal, not a look-alike"],
-    ["?goa trip budget", "docs.google.com/spreadsheets/…", "found by meaning"],
+    ["?wedding venue shortlist", "docs.google.com/document/d/9Fh2…", "found by meaning, not by name"],
   ];
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const visible = () => document.visibilityState === "visible";

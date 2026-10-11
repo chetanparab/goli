@@ -1,6 +1,6 @@
 # goli
 
-**The internet, on first-name terms.** Type `go/standup` and land in your 10 am meeting. Type `go/?the sheet with the goa trip budget` and goli finds it for you.
+**The internet, on first-name terms.** Type `go/standup` and land in your 10 am meeting. Type `go/?the doc with the wedding venues` and goli finds it for you.
 
 **Website:** [goli.theanalogyarchitect.com](https://goli.theanalogyarchitect.com) · part of [The Analogy Architect](https://www.theanalogyarchitect.com)
 
@@ -8,11 +8,11 @@ goli ("go links", and yes, *goli dena* 😉) is a single static binary that runs
 
 ```text
 go/standup                → https://meet.google.com/abc-defg-hij
-go/payslip                → https://hr.acme.in/ess/v2/payroll/statements
+go/budget                 → https://docs.google.com/spreadsheets/d/1xQ7…/edit
 go/pr/482                 → https://github.com/acme/app/pull/482
 go/flight/6E-2134         → live status for any flight number
 go/roadmp                 → "did you mean go/roadmap?" + one-click create
-go/?goa trip budget       → AI search across your links (opt-in)
+go/?wedding venues        → AI search across your links (opt-in)
 go/dashboard              → staging or prod, depending on your context
 ```
 
@@ -89,7 +89,7 @@ Phones can't edit `/etc/hosts`, but [Tailscale](https://tailscale.com) (free for
 
 **On iPhone**, Safari searches anything without a dot, so `go/standup` typed in the address bar becomes a Google search. Instead:
 
-- **Home Screen app (best):** open `http://go/` in Safari → Share → **Add to Home Screen**. Tap the `go/` icon, type `standup` and press Go. Exact keys open straight away, and descriptions like "payroll page" work too.
+- **Home Screen app (best):** open `http://go/` in Safari → Share → **Add to Home Screen**. Tap the `go/` icon, type `standup` and press Go. Exact keys open straight away, and descriptions like "budget sheet" work too.
 - **Type the full address:** `http://go/standup` always works.
 - **Siri:** make a Shortcut with *Ask for Input* → *URL* `http://go/[Provided Input]` → *Open URLs*, and name it "go".
 

@@ -90,10 +90,10 @@
       <div class="body">
         <p>One file, <code>~/.config/goli/links.yaml</code>. Short form or full form, mixed freely:</p>
         <pre><code>standup: https://meet.google.com/abc-defg-hij          <span class="c"># short form</span>
-payslip:                                               <span class="c"># full form</span>
-  url: https://hr.acme.in/ess/v2/payroll/statements
-  desc: Monthly payslips in the HR portal              <span class="c"># helps search</span>
-  tags: [hr, money]
+budget:                                                <span class="c"># full form</span>
+  url: https://docs.google.com/spreadsheets/d/1xQ7…/edit
+  desc: Household budget, updated monthly              <span class="c"># helps search</span>
+  tags: [home, money]
 pr: https://github.com/acme/app/pull/{1}               <span class="c"># go/pr/482</span>
 flight: https://www.flightradar24.com/data/flights/{1} <span class="c"># go/flight/6E-2134</span>
 gh: https://github.com/acme                            <span class="c"># + extra path</span>
@@ -116,13 +116,13 @@ dashboard:                                             <span class="c"># context
       <div class="section-head"><span class="num">iv.</span><h2 class="title" id="ai-h">AI search &amp; <em>privacy</em></h2></div>
       <div class="body">
         <p>AI search is <strong>off until you turn it on</strong>. Without it, goli's local fuzzy search already handles typos and keywords, and nothing leaves your machine.</p>
-        <p>Turn it on and <code>go/?the sheet with the goa trip budget</code> asks Claude which of your links you mean. Pick an engine:</p>
+        <p>Turn it on and <code>go/?the doc with the wedding venues</code> asks Claude which of your links you mean. Pick an engine:</p>
         <table>
           <tr><th>Engine</th><th>Uses</th></tr>
           <tr><td><code>claude-code</code></td><td>The Claude Code CLI you're already signed in to — your Claude subscription, no API key. goli runs it with no tools, no plugins and no saved history.</td></tr>
           <tr><td><code>anthropic</code></td><td>The Claude API, billed per request.</td></tr>
         </table>
-        <p><strong>Exactly what is sent, and only when you search:</strong> your query, plus each link's name, description, tags and <em>host name</em> (say, <code>hr.acme.in</code> — not the full address). Send full URLs or none with <code>send_urls</code>. Opening a link never calls AI, and if another website tries to trigger a search behind your back, goli quietly falls back to local search.</p>
+        <p><strong>Exactly what is sent, and only when you search:</strong> your query, plus each link's name, description, tags and <em>host name</em> (say, <code>docs.google.com</code> — not the full address). Send full URLs or none with <code>send_urls</code>. Opening a link never calls AI, and if another website tries to trigger a search behind your back, goli quietly falls back to local search.</p>
       </div>
     </section>
     <section class="section" id="phone" aria-labelledby="phone-h">
@@ -136,7 +136,7 @@ dashboard:                                             <span class="c"># context
       <div class="section-head"><span class="num">vi.</span><h2 class="title" id="cli-h">From the <em>terminal</em></h2></div>
       <div class="body">
         <pre><code><span class="p">$ </span>goli standup                <span class="c"># open a link — no server needed</span>
-<span class="p">$ </span>goli find payroll           <span class="c"># search</span>
+<span class="p">$ </span>goli find budget            <span class="c"># search</span>
 <span class="p">$ </span>goli add itr https://www.incometax.gov.in -d "Income tax e-filing" -t tax
 <span class="p">$ </span>goli ls · goli rm · goli edit · goli check · goli doctor</code></pre>
       </div>
