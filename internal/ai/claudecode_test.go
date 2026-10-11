@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/chetanparab/goli/internal/links"
@@ -12,6 +13,9 @@ import (
 // fakeClaude writes a stand-in for the claude CLI that prints body.
 func fakeClaude(t *testing.T, body string) string {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("uses a shell script as a stand-in for the claude CLI")
+	}
 	path := filepath.Join(t.TempDir(), "claude")
 	script := "#!/bin/sh\n" +
 		`if [ -n "$ANTHROPIC_BASE_URL" ]; then echo '{"is_error":true,"result":"env leaked"}'; exit 1; fi` + "\n" +

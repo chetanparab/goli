@@ -8,8 +8,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/chetanparab/goli/internal/platform"
 )
 
 // Network describes how to recognise a named network for context-aware links.
@@ -56,10 +59,18 @@ type Config struct {
 	dir string
 }
 
-// Dir returns goli's config directory: $GOLI_HOME, else ~/.config/goli.
+// Dir returns goli's config directory: $GOLI_HOME, else ~/.config/goli
+// (%AppData%\goli on Windows).
 func Dir() (string, error) {
 	if d := os.Getenv("GOLI_HOME"); d != "" {
 		return d, nil
+	}
+	if runtime.GOOS == "windows" {
+		d, err := os.UserConfigDir() // %AppData%
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(d, "goli"), nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -70,7 +81,7 @@ func Dir() (string, error) {
 
 func defaults() Config {
 	return Config{
-		Listen:    ":80",
+		Listen:    platform.DefaultListen,
 		Hostnames: []string{"go", "localhost", "127.0.0.1"},
 		AI:        AI{Enabled: false, Provider: "claude-code", SendURLs: "host"},
 	}
@@ -90,7 +101,7 @@ func Load() (*Config, error) {
 	path := filepath.Join(dir, "config.yaml")
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
-		if err := os.WriteFile(path, []byte(defaultConfigYAML), 0o600); err != nil {
+		if err := os.WriteFile(path, []byte(fmt.Sprintf(defaultConfigYAML, platform.DefaultListen)), 0o600); err != nil {
 			return nil, err
 		}
 		return &cfg, nil
@@ -130,7 +141,7 @@ func expandHome(p string) string {
 }
 
 const defaultConfigYAML = `# goli configuration. See https://github.com/chetanparab/goli#configuration
-listen: ":80"
+listen: "%s"
 hostnames: [go, localhost, 127.0.0.1]
 
 # links_file: ~/code/goli-links/links.yaml

@@ -1,10 +1,10 @@
 {{template "head" "Home"}}
 {{template "searchbox" ""}}
 
-{{if .CanWrite}}<details class="card">
-  <summary><strong>+ New link</strong></summary>
+{{if .CanWrite}}<details class="card"{{if .Form.Editing}} open{{end}}>
+  <summary><strong>{{if .Form.Editing}}Edit go/{{.Form.Key}}{{else}}+ New link{{end}}</strong></summary>
   <p class="muted" style="margin:8px 0 12px">Use <code>{1}</code>, <code>{id}</code> or <code>{*}</code> in the URL for parameters, e.g. <code>go/pr/123</code>.</p>
-  {{template "createform" ""}}
+  {{template "createform" .Form}}
 </details>{{end}}
 
 <div class="card">
@@ -16,7 +16,7 @@
       <td class="key"><a href="/{{.Key}}">{{.Key}}</a></td>
       <td>{{.Desc}}{{range .Tags}}<span class="tag">{{.}}</span>{{end}}{{if .Variants}}<span class="tag">context-aware</span>{{end}}</td>
       <td class="url">{{.URL}}</td>
-      <td class="del">{{if $.CanWrite}}<form method="post" action="/_/links/delete" data-confirm="Delete go/{{.Key}}?">
+      <td class="del">{{if $.CanWrite}}<a class="ghost" href="/?edit={{.Key}}#form" aria-label="Edit go/{{.Key}}">edit</a><form method="post" action="/_/links/delete" data-confirm="Delete go/{{.Key}}?">
           <input type="hidden" name="key" value="{{.Key}}"><button class="ghost" title="Delete go/{{.Key}}" aria-label="Delete go/{{.Key}}">×</button>
         </form>{{end}}</td>
     </tr>

@@ -53,14 +53,16 @@ input:focus{outline:2px solid var(--accent-fill);outline-offset:-1px}
 input[type=search]{flex:1;min-width:0}
 button{background:var(--accent-fill);color:var(--on-accent);border-color:var(--accent-fill);cursor:pointer;font-weight:600}
 button.ghost{background:none;color:var(--ink-faint);border-color:var(--line);font-weight:400;padding:3px 10px}
-button.ghost:hover{color:var(--ink);border-color:var(--ink-soft)}
+button.ghost:hover,a.ghost:hover{color:var(--ink);border-color:var(--ink-soft)}
+a.ghost{display:inline-block;border:1px solid var(--line);border-radius:10px;color:var(--ink-faint);padding:3px 9px;font-size:12px;text-decoration:none;margin-right:4px}
+input[readonly]{color:var(--ink-faint)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
 .card strong{font:500 17px 'Fraunces',Georgia,serif}
 table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:6px}
 td{padding:9px 6px;border-top:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
 td.key{width:26%;font-weight:600}
 td.url{color:var(--ink-faint);font-size:.85em}
-td.del{width:44px;text-align:right}
+td.del{width:98px;text-align:right;white-space:nowrap}td.del form{display:inline}
 .tag{display:inline-block;font-size:9.5px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);
   border:1px solid var(--line);border-radius:99px;padding:1px 7px;margin:2px 0 0 4px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -104,11 +106,12 @@ footer a{color:var(--ink-soft)}
 {{end}}
 
 {{define "createform"}}
-<form method="post" action="/_/links" class="grid">
-  <input name="key" value="{{.}}" placeholder="key, e.g. standup" aria-label="Key" required pattern="[a-z0-9][a-z0-9._\-]*(/[a-z0-9._\-]+)*">
-  <input name="url" type="url" placeholder="https://…" aria-label="URL" required>
-  <input name="desc" placeholder="description (helps search)" aria-label="Description">
-  <input name="tags" placeholder="tags, comma separated" aria-label="Tags">
-  <div class="wide"><button type="submit">Save link</button></div>
+<form method="post" action="/_/links" class="grid" id="form">
+  {{if .Editing}}<input type="hidden" name="mode" value="edit">{{end}}
+  <input name="key" value="{{.Key}}" placeholder="key, e.g. standup" aria-label="Key" required pattern="[a-z0-9][a-z0-9._\-]*(/[a-z0-9._\-]+)*"{{if .Editing}} readonly{{end}}>
+  <input name="url" type="url" value="{{.URL}}" placeholder="https://…" aria-label="URL" required>
+  <input name="desc" value="{{.Desc}}" placeholder="description (helps search)" aria-label="Description">
+  <input name="tags" value="{{.Tags}}" placeholder="tags, comma separated" aria-label="Tags">
+  <div class="wide"><button type="submit">{{if .Editing}}Save changes{{else}}Save link{{end}}</button>{{if .Editing}} <a class="muted" href="/">Cancel</a>{{end}}</div>
 </form>
 {{end}}

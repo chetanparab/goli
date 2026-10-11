@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -318,9 +319,11 @@ func writeAtomic(path string, data []byte) error {
 		tmp.Close()
 		return err
 	}
-	if err := tmp.Chmod(mode); err != nil {
-		tmp.Close()
-		return err
+	if runtime.GOOS != "windows" { // Windows has no Unix permissions to keep
+		if err := tmp.Chmod(mode); err != nil {
+			tmp.Close()
+			return err
+		}
 	}
 	if err := tmp.Sync(); err != nil {
 		tmp.Close()

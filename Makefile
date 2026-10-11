@@ -14,11 +14,11 @@ lint:
 	go vet ./...
 	golangci-lint run
 
-## install: build, copy to $(PREFIX)/bin and restart the background server if installed
+## install: build, copy to $(PREFIX)/bin and restart the background server if it's installed
 install: build
 	install -d $(PREFIX)/bin
 	install -m 0755 goli $(PREFIX)/bin/goli
-	@launchctl kickstart -k gui/$$(id -u)/dev.goli.server 2>/dev/null && echo "restarted goli server" || true
+	@$(PREFIX)/bin/goli restart 2>/dev/null || true
 
 run: build
 	./goli serve

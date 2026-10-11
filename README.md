@@ -30,62 +30,56 @@ go/dashboard              → staging or prod, depending on your context
 
 ## Install
 
+goli runs on **macOS, Windows and Linux**.
+
 ```bash
-# from source (Go 1.25+)
-git clone https://github.com/chetanparab/goli && cd goli
-make install            # installs to ~/.local/bin/goli (make sure it's on PATH)
+go install github.com/chetanparab/goli/cmd/goli@latest   # needs Go 1.25+
 ```
 
-Prebuilt binaries for macOS and Linux are attached to each [release](https://github.com/chetanparab/goli/releases).
+Or download a prebuilt binary — [macOS (Apple silicon)](https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_arm64.tar.gz) · [macOS (Intel)](https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_amd64.tar.gz) · [Windows](https://github.com/chetanparab/goli/releases/latest/download/goli_windows_amd64.zip) · [Windows ARM](https://github.com/chetanparab/goli/releases/latest/download/goli_windows_arm64.zip) · [Linux](https://github.com/chetanparab/goli/releases/latest/download/goli_linux_amd64.tar.gz) · [Linux ARM](https://github.com/chetanparab/goli/releases/latest/download/goli_linux_arm64.tar.gz) — and put it somewhere on your `PATH`. From a clone, `make install` builds into `~/.local/bin`.
 
 ## Set up `go/`
 
-```bash
-goli hosts              # prints the one command that maps "go" to 127.0.0.1 in /etc/hosts
-goli install            # run the server at login (macOS LaunchAgent; see below for Linux)
-goli doctor             # verify everything
-```
+The same three commands on every platform:
 
-`goli hosts` prints a `sudo tee` command for you to run rather than asking you to run goli itself as root.
+```bash
+goli hosts      # prints the one command that maps "go" to this machine in your hosts file
+goli install    # starts goli now and at every login
+goli doctor     # checks everything
+```
 
 Then open **http://go/** once. After the first visit, browsers accept plain `go/standup` in the address bar.
 
+| | macOS | Windows | Linux |
+|---|---|---|---|
+| Hosts file | `/etc/hosts` — `goli hosts` prints a `sudo tee` command | `C:\Windows\System32\drivers\etc\hosts` — `goli hosts` prints a PowerShell command to run **as Administrator** | `/etc/hosts` — `goli hosts` prints a `sudo tee` command |
+| Starts at login via | a LaunchAgent | your user's *Run* registry key (no admin rights, no console window) | a systemd user service |
+| Logs | `~/Library/Logs/goli.log` | `%LocalAppData%\goli\goli.log` | `journalctl --user -u goli` |
+| Settings | `~/.config/goli` | `%AppData%\goli` | `~/.config/goli` |
+| Port 80 | works as a normal user | works as a normal user | run `sudo setcap cap_net_bind_service=+ep $(which goli)` once |
+
+goli never asks to run itself with admin rights: `goli hosts` prints a command for you to review and run instead.
+
 > **Browser notes.** Chrome and Edge may treat `go/x` as a search until they've seen `http://go/` once. In Firefox, set `browser.fixup.domainwhitelist.go` to `true` in `about:config`. Safari works best with `http://go/x`.
 
-**Why port 80 on all interfaces?** Browsers request `http://go/` on port 80. macOS lets a normal user bind port 80 only on all interfaces (`:80`), not on `127.0.0.1`. goli therefore listens on `:80`. The port is reachable from your network, but every request that isn't from this machine (or a network you `allow`) gets a 403. To avoid even that, set `listen: "127.0.0.1:8080"` and forward port 80 yourself with `pf`.
+**Which address does goli listen on?** On macOS and Linux, `:80` (all interfaces) — macOS only lets a normal user bind port 80 that way. The port is reachable from your network, but every request that isn't from this machine (or a network you `allow`) gets a 403. On Windows the default is `127.0.0.1:80`, so Windows Firewall never asks; set `listen: ":80"` if you want other devices to reach it.
 
-**Linux:** let goli bind port 80 with `sudo setcap cap_net_bind_service=+ep $(which goli)`, then run it as a systemd user service:
-
-```ini
-# ~/.config/systemd/user/goli.service
-[Unit]
-Description=goli go/ links
-
-[Service]
-ExecStart=%h/.local/bin/goli serve
-Restart=on-failure
-
-[Install]
-WantedBy=default.target
-```
-
-```bash
-systemctl --user enable --now goli
-```
+After upgrading goli, run `goli restart`.
 
 ### Use go/ on your phone (Tailscale)
 
 Phones can't edit `/etc/hosts`, but [Tailscale](https://tailscale.com) (free for personal use) gives your devices a private network with its own DNS:
 
-1. Install Tailscale on the computer running goli and on your phone, signed in to the same account.
+1. Install Tailscale on the computer running goli (macOS, Windows or Linux) and on your phone (iPhone or Android), signed in to the same account.
 2. In the Tailscale admin console, rename the computer to `go` (MagicDNS must be on, which is the default).
 3. In `~/.config/goli/config.yaml`, using your own MagicDNS name from `tailscale status` (not a bare `*.ts.net`, which would trust every tailnet):
    ```yaml
    hostnames: [go, localhost, 127.0.0.1, "go.tailXXXX.ts.net"]
    allow: [tailscale]
-   # allow_write: true   # let the phone create/delete links too (off by default)
+   allow_write: true     # optional: add, edit and delete links from your phone too
+   # listen: ":80"       # Windows only: the default listens on 127.0.0.1
    ```
-4. Restart the server (`goli install` again, or `goli serve`), then open `http://go/` on the phone once.
+4. Run `goli restart`, then open `http://go/` on the phone once.
 
 **On iPhone**, Safari searches anything without a dot, so `go/standup` typed in the address bar becomes a Google search. Instead:
 
@@ -93,7 +87,11 @@ Phones can't edit `/etc/hosts`, but [Tailscale](https://tailscale.com) (free for
 - **Type the full address:** `http://go/standup` always works.
 - **Siri:** make a Shortcut with *Ask for Input* → *URL* `http://go/[Provided Input]` → *Open URLs*, and name it "go".
 
-Only devices on your tailnet are let in, and only when the connection arrives on this machine's tailnet address; everything else on your Wi-Fi is still refused. Allowed devices can open and search links but not change them unless you set `allow_write: true`. If you put a reverse proxy (or `tailscale serve`) in front of goli, its traffic looks local to goli, so keep that in mind. The computer has to be awake for links to work: on macOS, add `keep_awake: true` to stop idle sleep while it's plugged in (closing the lid still sleeps it unless an external display is attached). Links that point to `localhost` open on the phone's own localhost, so they're only useful on the computer.
+**On Android**, Chrome behaves the same way: open `http://go/` once, then ⋮ → **Add to Home screen**.
+
+**Managing links from the phone:** with `allow_write: true`, the Home Screen app shows **+ New link**, and every link gets **edit** and **×** buttons. A link that doesn't exist yet can be created straight from its "doesn't exist" page. Leave `allow_write` off if anyone else shares your tailnet.
+
+Only devices on your tailnet are let in, and only when the connection arrives on this machine's tailnet address; everything else on your Wi-Fi is still refused. Allowed devices can open and search links but not change them unless you set `allow_write: true`. If you put a reverse proxy (or `tailscale serve`) in front of goli, its traffic looks local to goli, so keep that in mind. The computer has to be awake for links to work: `keep_awake: true` stops idle sleep while goli runs (on macOS only while plugged in; closing a laptop lid still sleeps it unless an external display is attached). Links that point to `localhost` open on the phone's own localhost, so they're only useful on the computer.
 
 ## Links file
 
@@ -149,22 +147,23 @@ goli edit                      open links.yaml in $EDITOR (validated on save)
 goli check [-local]            find dead links
 goli ctx [set k=v | unset k]   show or change context
 goli serve                     run the server in the foreground
-goli install | uninstall       start/stop the server at login (macOS)
-goli hosts [-apply]            print or add the /etc/hosts entry
+goli install | uninstall       start/stop the server at login (macOS, Windows, Linux)
+goli restart                   restart the background server (after an upgrade)
+goli hosts [-apply]            print (or, with admin rights, add) the hosts-file entry
 goli doctor                    check that everything is wired up
 ```
 
 ## Configuration
 
-`~/.config/goli/config.yaml` (created on first run; `$GOLI_HOME` overrides the directory):
+`~/.config/goli/config.yaml` (`%AppData%\goli\config.yaml` on Windows; created on first run; `$GOLI_HOME` overrides the directory):
 
 ```yaml
-listen: ":80"
+listen: ":80"                           # "127.0.0.1:80" by default on Windows
 hostnames: [go, localhost, 127.0.0.1]   # accepted Host headers ("*.x" matches subdomains)
 # links_file: ~/code/goli-links/links.yaml
 # allow: [tailscale]                    # other devices (see "Use go/ on your phone")
 # allow_write: false
-# keep_awake: true                      # macOS: no idle sleep while plugged in
+# keep_awake: true                      # no idle sleep while goli runs
 ai:
   enabled: false                        # opt in
   provider: claude-code                 # or: anthropic

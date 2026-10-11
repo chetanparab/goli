@@ -318,3 +318,39 @@ func TestAssets(t *testing.T) {
 		t.Errorf("unknown asset: %d", w.Code)
 	}
 }
+
+func TestEditForm(t *testing.T) {
+	s, store := newServer(t)
+	store.Put(&links.Link{Key: "dash", URL: "https://prod.example.com", Desc: "Dashboard", Tags: []string{"ops"},
+		Variants: []links.Variant{{When: map[string]string{"env": "dev"}, URL: "http://localhost:3000"}}})
+	h := s.Handler()
+	w := do(h, "GET", "/?edit=dash", nil, nil)
+	if body := w.Body.String(); !strings.Contains(body, `value="https://prod.example.com"`) || !strings.Contains(body, "Edit go/dash") {
+		t.Fatalf("edit form not pre-filled:\n%s", body)
+	}
+	// Clearing the description in the edit form clears it; variants survive.
+	form := url.Values{"mode": {"edit"}, "key": {"dash"}, "url": {"https://prod2.example.com"}, "desc": {""}, "tags": {""}}.Encode()
+	do(h, "POST", "/_/links", strings.NewReader(form), func(r *http.Request) {
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	})
+	l, _ := store.Get("dash")
+	if l.URL != "https://prod2.example.com" || l.Desc != "" || len(l.Tags) != 0 || len(l.Variants) != 1 {
+		t.Errorf("edit result: %+v", l)
+	}
+	// Read-only clients don't get the form.
+	s.cfg.Allow = []string{"tailscale"}
+	w = do(s.Handler(), "GET", "/?edit=dash", nil, viaTailnet("100.101.102.103:5000", "go"))
+	if strings.Contains(w.Body.String(), "Edit go/dash") {
+		t.Error("read-only client saw the edit form")
+	}
+}
+
+func TestUIParamsAreNotSearches(t *testing.T) {
+	s, _ := newServer(t)
+	for _, target := range []string{"/?saved=claude", "/?edit=claude", "/?ctx.env=dev"} {
+		w := do(s.Handler(), "GET", target, nil, nil)
+		if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "links</strong>") {
+			t.Errorf("%s: expected the home page, got %d", target, w.Code)
+		}
+	}
+}

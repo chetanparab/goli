@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>goli — the internet, on first-name terms · The Analogy Architect</title>
-<meta name="description" content="goli turns the pages you open every day into short names you can type: go/standup, go/budget, go/itr. From your browser, terminal or phone. Open source, runs on your own machine.">
+<meta name="description" content="goli turns the pages you open every day into short names you can type: go/standup, go/budget, go/itr. From your browser, terminal or phone. Open source for macOS, Windows and Linux.">
 <link rel="canonical" href="https://goli.theanalogyarchitect.com/">
 <meta property="og:site_name" content="goli · The Analogy Architect">
 <meta property="og:type" content="website">
@@ -25,7 +25,7 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"goli",
  "description":"Personal go/ short links on your own machine: typo rescue, search by meaning, context-aware links, links as code.",
- "url":"https://goli.theanalogyarchitect.com/","applicationCategory":"DeveloperApplication","operatingSystem":"macOS, Linux",
+ "url":"https://goli.theanalogyarchitect.com/","applicationCategory":"DeveloperApplication","operatingSystem":"macOS, Windows, Linux",
  "license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,
  "offers":{"@type":"Offer","price":"0","priceCurrency":"INR"},
  "softwareHelp":"https://goli.theanalogyarchitect.com/details",
@@ -82,14 +82,14 @@
           </ul>
 
           <div class="install" aria-label="Install command"><span class="p" aria-hidden="true">$</span><code id="install-cmd">go install github.com/chetanparab/goli/cmd/goli@latest</code><button type="button" class="copy-inline" data-copy-target="install-cmd">Copy</button></div>
-          <p class="downloads">Needs Go 1.25+. Or download for <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_arm64.tar.gz">Mac (Apple silicon)</a> · <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_amd64.tar.gz">Mac (Intel)</a> · <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_linux_amd64.tar.gz">Linux</a> · <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_linux_arm64.tar.gz">Linux ARM</a></p>
+          <p class="downloads">Needs Go 1.25+. Or download for <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_arm64.tar.gz">Mac (Apple silicon)</a> · <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_amd64.tar.gz">Mac (Intel)</a> · <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_windows_amd64.zip">Windows</a> · <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_linux_amd64.tar.gz">Linux</a> · <a href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">all downloads</a></p>
 
           <div class="actions">
             <a class="btn" href="#start">Get started <span aria-hidden="true">↓</span></a>
             <a class="link" href="https://github.com/chetanparab/goli" rel="noopener">View on GitHub</a>
             <a class="link" href="/details">How it works</a>
           </div>
-          <p class="fine">MIT licensed &nbsp;·&nbsp; macOS &amp; Linux &nbsp;·&nbsp; no account, no cloud</p>
+          <p class="fine">MIT licensed &nbsp;·&nbsp; macOS, Windows &amp; Linux &nbsp;·&nbsp; no account, no cloud</p>
         </div>
 
         <div class="hero-visual">
@@ -187,7 +187,7 @@ https://www.flightradar24.com/data/flights/6e2134
         <li><h3>Search by meaning</h3><p>Opt in, and <code>go/?</code> plus a description finds the link you meant, then opens it when it's sure.</p></li>
         <li><h3>One name, many places</h3><p><code>go/dashboard</code> can open staging at work and prod on call — by environment, network or time of day.</p></li>
         <li><h3>Links you can review</h3><p>Everything lives in one readable file. Keep it in git, review changes, and let <code>goli check</code> catch dead links.</p></li>
-        <li><h3>Everywhere you are</h3><p>The address bar, the terminal, Raycast — and your phone, through a private Tailscale network.</p></li>
+        <li><h3>Everywhere you are</h3><p>Mac, Windows or Linux; the address bar, the terminal, Raycast — and your iPhone or Android phone, where you can add and edit links too.</p></li>
         <li><h3>Built to be trusted</h3><p>Security-reviewed before release, strict by default, and every release is built in the open with signed provenance you can verify.</p></li>
       </ol>
     </section>
@@ -218,7 +218,7 @@ https://www.flightradar24.com/data/flights/6e2134
         <ol class="steps">
           <li><strong>Install goli</strong> — with Go, or grab a <a href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">prebuilt download</a>.
             <pre data-copy><code><span class="p">$ </span>go install github.com/chetanparab/goli/cmd/goli@latest</code></pre></li>
-          <li><strong>Point <code>go/</code> at your machine.</strong> <code>goli hosts</code> prints the one command to run; <code>goli install</code> starts goli at login.
+          <li><strong>Point <code>go/</code> at your machine.</strong> <code>goli hosts</code> prints the one command to run (Terminal on Mac and Linux, an Administrator PowerShell on Windows); <code>goli install</code> starts goli at login.
             <pre data-copy><code><span class="p">$ </span>goli hosts
 <span class="p">$ </span>goli install</code></pre></li>
           <li><strong>Add your first link</strong>, then type <code>go/standup</code> in your browser.

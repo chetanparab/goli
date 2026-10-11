@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -224,6 +225,9 @@ spa: https://app.example.com/#/home
 }
 
 func TestPutWritesThroughSymlinkAndKeepsMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks and Unix permissions")
+	}
 	dir := t.TempDir()
 	target := filepath.Join(dir, "repo", "links.yaml")
 	os.MkdirAll(filepath.Dir(target), 0o755)

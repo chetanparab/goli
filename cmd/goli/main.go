@@ -11,6 +11,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -20,7 +21,6 @@ import (
 	"runtime"
 	"runtime/debug"
 	"sort"
-	"strconv"
 	"strings"
 	"syscall"
 	"text/tabwriter"
@@ -29,9 +29,9 @@ import (
 	"github.com/chetanparab/goli/internal/ai"
 	"github.com/chetanparab/goli/internal/config"
 	"github.com/chetanparab/goli/internal/ctxinfo"
-	"github.com/chetanparab/goli/internal/launchd"
 	"github.com/chetanparab/goli/internal/links"
 	"github.com/chetanparab/goli/internal/match"
+	"github.com/chetanparab/goli/internal/platform"
 	"github.com/chetanparab/goli/internal/server"
 )
 
@@ -61,12 +61,13 @@ Usage:
   goli check [-local]            find dead links
   goli ctx [set k=v | unset k]   show or change context (for context-aware links)
   goli serve                     run the go/ server in the foreground
-  goli install | uninstall       start/stop the server at login (macOS)
-  goli hosts [-apply]            print or add the /etc/hosts entry for go/ (apply needs sudo)
+  goli install | uninstall       start/stop the server at login (macOS, Linux, Windows)
+  goli restart                   restart the background server (after an upgrade)
+  goli hosts [-apply]            print or add the hosts-file entry for go/ (apply needs admin rights)
   goli doctor                    check that everything is wired up
   goli version
 
-Files live in ~/.config/goli (override with $GOLI_HOME).
+Settings live in ~/.config/goli (%AppData%\goli on Windows; override with $GOLI_HOME).
 `
 
 func main() {
@@ -104,7 +105,7 @@ func run(args []string) error {
 
 	switch cmd {
 	case "serve":
-		return cmdServe(cfg, store)
+		return cmdServe(cfg, store, rest)
 	case "add":
 		return cmdAdd(store, rest)
 	case "rm", "delete":
@@ -129,10 +130,16 @@ func run(args []string) error {
 	case "install":
 		return cmdInstall()
 	case "uninstall":
-		if err := launchd.Uninstall(); err != nil {
+		if err := platform.UninstallService(); err != nil {
 			return err
 		}
-		fmt.Println("goli server removed from login items")
+		fmt.Println("goli no longer starts at login")
+		return nil
+	case "restart":
+		if err := platform.RestartService(); err != nil {
+			return err
+		}
+		fmt.Println("goli server restarted")
 		return nil
 	case "doctor":
 		return cmdDoctor(cfg, store)
@@ -154,14 +161,41 @@ var subcommands = map[string]bool{
 	"help": true, "version": true, "hosts": true, "serve": true, "add": true, "rm": true,
 	"delete": true, "ls": true, "list": true, "find": true, "search": true, "edit": true,
 	"check": true, "ctx": true, "install": true, "uninstall": true, "doctor": true, "open": true,
+	"restart": true,
 }
 
-func cmdServe(cfg *config.Config, store *links.Store) error {
-	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
+func cmdServe(cfg *config.Config, store *links.Store, args []string) error {
+	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
+	background := fs.Bool("background", false, "detach from the console (used by `goli install` on Windows)")
+	logFile := fs.String("log", "", "append logs to this file instead of stderr")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	out := io.Writer(os.Stderr)
+	if *logFile != "" {
+		if err := os.MkdirAll(filepath.Dir(*logFile), 0o700); err != nil {
+			return err
+		}
+		f, err := os.OpenFile(*logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		out = f
+	}
+	if *background {
+		platform.Detach()
+		platform.WritePID()
+	}
+	log := slog.New(slog.NewTextHandler(out, nil))
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if cfg.KeepAwake {
-		keepAwake(log)
+		if err := platform.KeepAwake(os.Getpid()); err != nil {
+			log.Warn("keep_awake unavailable", "err", err)
+		} else {
+			log.Info("keeping the computer awake while goli runs")
+		}
 	}
 	err := server.New(cfg, store, log).ListenAndServe(ctx)
 	if errors.Is(err, syscall.EACCES) {
@@ -198,15 +232,7 @@ func cmdOpen(cfg *config.Config, store *links.Store, args []string) error {
 		return err
 	}
 	fmt.Println(res.URL)
-	return openBrowser(res.URL)
-}
-
-func openBrowser(u string) error {
-	name := "xdg-open"
-	if runtime.GOOS == "darwin" {
-		name = "open"
-	}
-	return exec.Command(name, u).Run()
+	return platform.OpenURL(res.URL)
 }
 
 func cmdAdd(store *links.Store, args []string) error {
@@ -307,11 +333,7 @@ func cmdFind(cfg *config.Config, store *links.Store, args []string) error {
 }
 
 func cmdEdit(store *links.Store) error {
-	editor := os.Getenv("EDITOR")
-	if editor == "" {
-		editor = "vi"
-	}
-	c := exec.Command("sh", "-c", editor+` "$1"`, "sh", store.Path())
+	c := platform.EditCommand(os.Getenv("EDITOR"), store.Path())
 	c.Stdin, c.Stdout, c.Stderr = os.Stdin, os.Stdout, os.Stderr
 	if err := c.Run(); err != nil {
 		return err
@@ -389,80 +411,59 @@ func cmdInstall() error {
 	if resolved, err := filepath.EvalSymlinks(bin); err == nil && !strings.Contains(resolved, "/Cellar/") {
 		bin = resolved
 	}
-	env := map[string]string{"PATH": "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin"}
+	env := map[string]string{}
 	if h := os.Getenv("GOLI_HOME"); h != "" {
 		env["GOLI_HOME"] = h
 	}
-	if err := launchd.Install(bin, env); err != nil {
+	if err := platform.InstallService(bin, env); err != nil {
 		return err
 	}
-	fmt.Println("goli server installed; it starts at login. Logs:", launchd.LogPath())
+	fmt.Println("goli server installed; it starts at login. Logs:", platform.LogLocation())
 	return nil
 }
 
-var hostsLines = []string{"127.0.0.1\tgo", "::1\tgo"}
-
 func cmdHosts(args []string) error {
 	fs := flag.NewFlagSet("hosts", flag.ContinueOnError)
-	apply := fs.Bool("apply", false, "append the entries to /etc/hosts (run with sudo)")
+	apply := fs.Bool("apply", false, "append the entries to the hosts file (needs admin rights)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	data, err := os.ReadFile("/etc/hosts")
+	path := platform.HostsPath()
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 	var missing []string
-	for _, l := range hostsLines {
-		if !hostsHas(string(data), l) {
+	for _, l := range platform.HostsLines {
+		if !platform.HostsHas(string(data), l) {
 			missing = append(missing, l)
 		}
 	}
 	if len(missing) == 0 {
-		fmt.Println("/etc/hosts already maps go → this machine")
+		fmt.Println("the hosts file already maps go → this machine")
 		return nil
 	}
 	if !*apply {
-		// Recommend a command that doesn't run goli itself as root: the goli
-		// binary is usually user-writable, so `sudo goli` trusts it with root.
-		fmt.Println("Add go to /etc/hosts (needs your password):")
-		fmt.Printf("  printf '\\n# goli: go/ short links\\n%s\\n' | sudo tee -a /etc/hosts >/dev/null\n",
-			strings.ReplaceAll(strings.Join(missing, "\\n"), "\t", " "))
-		fmt.Println("  sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder")
-		fmt.Println("(or: sudo goli hosts -apply)")
+		// Recommend a command that doesn't run goli itself with admin rights:
+		// the goli binary is usually user-writable.
+		fmt.Printf("Add go to %s (needs admin rights):\n  %s\n", path, platform.HostsInstructions(missing))
 		return nil
 	}
-	f, err := os.OpenFile("/etc/hosts", os.O_APPEND|os.O_WRONLY, 0)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
 	if err != nil {
-		return fmt.Errorf("%w (run with sudo)", err)
+		return fmt.Errorf("%w (run with admin rights)", err)
 	}
 	defer f.Close()
-	if _, err := fmt.Fprintf(f, "\n# goli: go/ short links\n%s\n", strings.Join(missing, "\n")); err != nil {
+	nl := "\n"
+	if runtime.GOOS == "windows" {
+		nl = "\r\n"
+	}
+	if _, err := fmt.Fprintf(f, "%s# goli: go/ short links%s%s%s", nl, nl, strings.Join(missing, nl), nl); err != nil {
 		return err
 	}
-	_ = exec.Command("dscacheutil", "-flushcache").Run()
-	_ = exec.Command("killall", "-HUP", "mDNSResponder").Run()
-	fmt.Println("added go to /etc/hosts")
+	platform.FlushDNS()
+	fmt.Println("added go to", path)
 	return nil
-}
-
-func hostsHas(hosts, line string) bool {
-	want := strings.Fields(line)
-	for _, l := range strings.Split(hosts, "\n") {
-		if i := strings.Index(l, "#"); i >= 0 {
-			l = l[:i]
-		}
-		f := strings.Fields(l)
-		if len(f) < 2 || f[0] != want[0] {
-			continue
-		}
-		for _, name := range f[1:] {
-			if name == want[1] {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func cmdDoctor(cfg *config.Config, store *links.Store) error {
@@ -479,14 +480,9 @@ func cmdDoctor(cfg *config.Config, store *links.Store) error {
 	fmt.Println("goli", version)
 	ok(true, fmt.Sprintf("%d links in %s", len(store.All()), store.Path()), "")
 
-	hosts, _ := os.ReadFile("/etc/hosts")
-	ok(hostsHas(string(hosts), hostsLines[0]), "/etc/hosts maps go → 127.0.0.1", "goli hosts   (prints the command to run)")
-
-	if runtime.GOOS == "darwin" {
-		plist, _ := launchd.PlistPath()
-		_, err := os.Stat(plist)
-		ok(err == nil, "server starts at login", "goli install")
-	}
+	hosts, _ := os.ReadFile(platform.HostsPath())
+	ok(platform.HostsHas(string(hosts), platform.HostsLines[0]), "hosts file maps go → 127.0.0.1", "goli hosts   (prints the command to run)")
+	ok(platform.ServiceInstalled(), "server starts at login ("+platform.Name+")", "goli install")
 
 	port := "80"
 	if i := strings.LastIndex(cfg.Listen, ":"); i >= 0 {
@@ -500,12 +496,12 @@ func cmdDoctor(cfg *config.Config, store *links.Store) error {
 	if resp != nil {
 		resp.Body.Close()
 	}
-	ok(up, "server answering on port "+port, "goli install   (or goli serve to run it in the foreground; logs: "+launchd.LogPath()+")")
+	ok(up, "server answering on port "+port, "goli install   (or goli serve to run it in the foreground; logs: "+platform.LogLocation()+")")
 
 	if allowsTailscale(cfg.Allow) {
 		name, err := tailscaleName()
 		ok(err == nil && strings.HasPrefix(name, "go."), "Tailscale: this Mac is "+orNone(name, err),
-			"install Tailscale (brew install --cask tailscale-app), sign in, then rename this machine to \"go\" in the admin console")
+			"install Tailscale (tailscale.com/download), sign in, then rename this machine to \"go\" in the admin console")
 	}
 
 	switch {
@@ -541,9 +537,8 @@ func allowsTailscale(allow []string) bool {
 
 // tailscaleName returns this machine's MagicDNS name, e.g. "go.tail1234.ts.net".
 func tailscaleName() (string, error) {
-	bin, err := exec.LookPath("tailscale")
-	if err != nil {
-		bin = "/Applications/Tailscale.app/Contents/MacOS/Tailscale"
+	bin := platform.TailscaleBinary()
+	if _, err := exec.LookPath(bin); err != nil {
 		if _, statErr := os.Stat(bin); statErr != nil {
 			return "", errors.New("tailscale not installed")
 		}
@@ -570,21 +565,4 @@ func orNone(name string, err error) string {
 		return err.Error()
 	}
 	return name
-}
-
-// keepAwake holds a macOS "prevent idle sleep on AC power" assertion for as
-// long as this process lives (caffeinate -w exits when we do). Closing the
-// lid still sleeps the Mac unless an external display is attached.
-func keepAwake(log *slog.Logger) {
-	if runtime.GOOS != "darwin" {
-		log.Warn("keep_awake is only supported on macOS")
-		return
-	}
-	cmd := exec.Command("/usr/bin/caffeinate", "-s", "-w", strconv.Itoa(os.Getpid()))
-	if err := cmd.Start(); err != nil {
-		log.Error("keep_awake: caffeinate", "err", err)
-		return
-	}
-	go func() { _ = cmd.Wait() }()
-	log.Info("keeping the Mac awake while on power")
 }

@@ -148,8 +148,14 @@ func (s *Server) handleGo(w http.ResponseWriter, r *http.Request) {
 			s.search(w, r, q, true)
 			return
 		}
+		form := linkForm{}
+		if key := r.URL.Query().Get("edit"); key != "" && canWrite(r) {
+			if l, ok := s.store.Get(key); ok {
+				form = linkForm{Key: l.Key, URL: l.URL, Desc: l.Desc, Tags: strings.Join(l.Tags, ", "), Editing: true}
+			}
+		}
 		s.render(w, http.StatusOK, "home.html", map[string]any{
-			"Links": s.store.All(), "AI": s.ranker != nil, "CanWrite": canWrite(r),
+			"Links": s.store.All(), "AI": s.ranker != nil, "CanWrite": canWrite(r), "Form": form,
 		})
 		return
 	}
@@ -170,6 +176,7 @@ func (s *Server) handleGo(w http.ResponseWriter, r *http.Request) {
 		key := links.NormalizeKey(path)
 		s.render(w, http.StatusNotFound, "notfound.html", map[string]any{
 			"Key":         key,
+			"Form":        linkForm{Key: key},
 			"KeyValid":    links.ValidateKey(key) == nil,
 			"CanWrite":    canWrite(r),
 			"Suggestions": match.Rank(strings.ReplaceAll(key, "/", " "), s.store.All(), 6),
@@ -193,6 +200,10 @@ func searchQuery(r *http.Request) string {
 		return q
 	}
 	if len(params) > 0 && len(links.CtxOverrides(params)) == len(params) {
+		return ""
+	}
+	// Home-page UI parameters (?edit=key, ?saved=key) aren't searches.
+	if params.Has("edit") || params.Has("saved") {
 		return ""
 	}
 	q, err := url.QueryUnescape(raw)
@@ -248,6 +259,12 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	s.search(w, r, q, direct || r.URL.Query().Get("lucky") == "1")
+}
+
+// linkForm pre-fills the create/edit form.
+type linkForm struct {
+	Key, URL, Desc, Tags string
+	Editing              bool
 }
 
 type searchResult struct {
@@ -368,12 +385,20 @@ func (s *Server) formPut(w http.ResponseWriter, r *http.Request) {
 		Desc: strings.TrimSpace(r.FormValue("desc")),
 		Tags: splitTags(r.FormValue("tags")),
 	}
-	s.mergeExisting(l)
+	if r.FormValue("mode") == "edit" {
+		// The edit form shows every field, so an empty one means "cleared";
+		// only variants (not editable here) are carried over.
+		if old, ok := s.store.Get(l.Key); ok {
+			l.Variants = old.Variants
+		}
+	} else {
+		s.mergeExisting(l)
+	}
 	if err := s.store.Put(l); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	http.Redirect(w, r, "/?created="+url.QueryEscape(l.Key), http.StatusSeeOther)
+	http.Redirect(w, r, "/?saved="+url.QueryEscape(l.Key), http.StatusSeeOther)
 }
 
 // mergeExisting keeps fields an update didn't supply (variants are only

@@ -78,10 +78,17 @@
           <li>Start it at login with <code>goli install</code>, then check everything with <code>goli doctor</code>.</li>
           <li>Open <code>http://go/</code> once. After that, plain <code>go/standup</code> works in Chrome, Edge and Firefox.</li>
         </ol>
+        <h3>Windows</h3>
+        <ol class="steps">
+          <li>Download <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_windows_amd64.zip">goli for Windows</a> (or <code>go install</code> as above), unzip it and put <code>goli.exe</code> in a folder on your <code>PATH</code>.</li>
+          <li>Run <code>goli hosts</code>. It prints one PowerShell command — run it in PowerShell opened with <strong>Run as administrator</strong>.</li>
+          <li><code>goli install</code> starts goli now and at every sign-in, with no console window and no admin rights. Check with <code>goli doctor</code>.</li>
+        </ol>
+        <p class="note">On Windows goli listens on <code>127.0.0.1</code> by default, so Windows Firewall never asks. Settings live in <code>%AppData%\goli</code>.</p>
         <h3>Linux</h3>
-        <p>Same build; then let goli use port 80 and run it as a user service (the unit file is in the README):</p>
+        <p>Same install. Let goli use port 80 once; then <code>goli install</code> sets up a systemd user service:</p>
         <pre data-copy><code><span class="p">$ </span>sudo setcap cap_net_bind_service=+ep $(which goli)
-<span class="p">$ </span>systemctl --user enable --now goli</code></pre>
+<span class="p">$ </span>goli install</code></pre>
         <p class="note">Why port 80? Browsers ask for <code>http://go/</code> on port 80. goli listens there but answers only this machine — and devices you explicitly allow. Everyone else on your Wi-Fi gets a polite “no”.</p>
       </div>
     </section>
@@ -129,7 +136,9 @@ dashboard:                                             <span class="c"># context
       <div class="section-head"><span class="num">v.</span><h2 class="title" id="phone-h">On your <em>phone</em></h2></div>
       <div class="body">
         <p>Phones can't edit <code>/etc/hosts</code>, so goli uses <a href="https://tailscale.com" rel="noopener">Tailscale</a> — a free, private network between your own devices. Name your computer <code>go</code> in Tailscale, add <code>allow: [tailscale]</code> to goli's config, and your phone reaches <code>http://go/</code> from anywhere.</p>
-        <p>On iPhone, Safari searches anything without a dot — so add <code>http://go/</code> to your Home Screen instead: tap the <strong>go/</strong> icon, type <code>standup</code>, done. Other devices can open and search links, but only change them if you set <code>allow_write: true</code>.</p>
+        <p>On iPhone, Safari searches anything without a dot — so add <code>http://go/</code> to your Home Screen instead: tap the <strong>go/</strong> icon, type <code>standup</code>, done. On Android, open <code>http://go/</code> in Chrome, then ⋮ → <strong>Add to Home screen</strong>.</p>
+        <h3>Managing links from your phone</h3>
+        <p>Add <code>allow_write: true</code> to goli's config and run <code>goli restart</code>. The Home Screen app then shows <strong>+ New link</strong>, every link gets <strong>edit</strong> and <strong>×</strong> buttons, and a name that doesn't exist yet can be created from its own page. Leave it off if anyone else shares your Tailscale network: by default other devices can open and search links, but not change them.</p>
       </div>
     </section>
     <section class="section" id="cli" aria-labelledby="cli-h">
@@ -159,8 +168,8 @@ dashboard:                                             <span class="c"># context
       <div class="section-head"><span class="num">viii.</span><h2 class="title" id="faq-h">Questions</h2></div>
       <div class="body">
         <details><summary>Will it clash with my company's go/ links?</summary><p>On a work laptop where <code>go</code> already points to a company server, goli's hosts entry would take over. Use another name there — goli answers to any hostname you list in <code>hostnames</code>.</p></details>
-        <details><summary>Does it work while my computer sleeps?</summary><p>Your computer has to be awake to answer. On macOS, <code>keep_awake: true</code> stops idle sleep while it's plugged in.</p></details>
-        <details><summary>Windows?</summary><p>Not yet — macOS and Linux today. Contributions welcome.</p></details>
+        <details><summary>Does it work while my computer sleeps?</summary><p>Your computer has to be awake to answer. <code>keep_awake: true</code> stops idle sleep while goli runs (on a Mac, while it's plugged in).</p></details>
+        <details><summary>Does it work on Windows?</summary><p>Yes — macOS, Windows and Linux, on Intel and ARM. Phones (iPhone and Android) connect through Tailscale.</p></details>
         <details><summary>Why “goli”?</summary><p>Go links → goli. And yes, the Hindi pun is intended: <em>goli dena</em> means giving someone the slip — goli gets you past long URLs.</p></details>
       </div>
     </section>
