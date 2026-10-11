@@ -1,5 +1,13 @@
-// Light/dark toggle, remembered across visits (same key as The Analogy Architect).
-const themeBtn = document.getElementById("themeBtn");
+// goli.theanalogyarchitect.com — theme, copy buttons, download button and the
+// three live demos (browser, phone, terminal). Every demo pauses when it's off
+// screen or the tab is hidden, and shows a still picture under reduced motion.
+
+const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const $ = (id) => document.getElementById(id);
+
+// ── Light/dark toggle (same key as The Analogy Architect) ─────────────────
+const themeBtn = $("themeBtn");
 if (themeBtn) {
   themeBtn.addEventListener("click", () => {
     const root = document.documentElement;
@@ -9,78 +17,214 @@ if (themeBtn) {
   });
 }
 
-// Copy buttons on code blocks (copies the commands, not the "$ " prompts).
+// ── Copy buttons ───────────────────────────────────────────────────────────
+async function copyText(btn, text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = "Copied";
+    setTimeout(() => (btn.textContent = "Copy"), 1500);
+  } catch (e) { btn.textContent = "Select & copy"; }
+}
 for (const pre of document.querySelectorAll("pre[data-copy]")) {
   const b = document.createElement("button");
   b.type = "button";
   b.className = "copy";
   b.textContent = "Copy";
-  b.addEventListener("click", async () => {
+  b.addEventListener("click", () => {
     const code = pre.querySelector("code").cloneNode(true);
     code.querySelectorAll(".p, .c").forEach((el) => el.remove());
-    const text = code.textContent.split("\n").map((l) => l.trimEnd()).join("\n").trim();
-    try {
-      await navigator.clipboard.writeText(text);
-      b.textContent = "Copied";
-      setTimeout(() => (b.textContent = "Copy"), 1500);
-    } catch (e) { b.textContent = "Select & copy"; }
+    copyText(b, code.textContent.split("\n").map((l) => l.trimEnd()).join("\n").trim());
   });
   pre.appendChild(b);
 }
 
-// Inline copy buttons (the install one-liner).
-for (const b of document.querySelectorAll("[data-copy-target]")) {
-  b.addEventListener("click", async () => {
-    const text = document.getElementById(b.dataset.copyTarget).textContent.trim();
-    try {
-      await navigator.clipboard.writeText(text);
-      b.textContent = "Copied";
-      setTimeout(() => (b.textContent = "Copy"), 1500);
-    } catch (e) { b.textContent = "Select & copy"; }
-  });
+// ── Download button for the visitor's OS ───────────────────────────────────
+const dl = $("dl-btn");
+if (dl) {
+  const base = "https://github.com/chetanparab/goli/releases/latest/download/";
+  const ua = navigator.userAgent || "";
+  const plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+  const mobile = /Android|iPhone|iPad|iPod/i.test(ua);
+  let label = "", file = "";
+  if (!mobile && /Mac/i.test(plat)) { label = "Download for Mac"; file = "goli_darwin_arm64.tar.gz"; }
+  else if (!mobile && /Win/i.test(plat)) { label = "Download for Windows"; file = "goli_windows_amd64.zip"; }
+  else if (!mobile && /Linux/i.test(plat)) { label = "Download for Linux"; file = "goli_linux_amd64.tar.gz"; }
+  if (file) {
+    dl.href = base + file;
+    dl.removeAttribute("rel");
+    dl.firstChild.textContent = label + " ";
+  } else if (mobile) {
+    const note = $("dl-note");
+    if (note) note.textContent = "goli runs on your computer — install it there, then use it from this phone.";
+  }
 }
 
-// The hero address bar: types an example, shows where it lands, moves on.
-const typed = document.getElementById("typed");
-const dest = document.getElementById("dest");
-const destUrl = document.getElementById("dest-url");
-const destNote = document.getElementById("dest-note");
-const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// ── Pausing: only animate what's on screen in a visible tab ────────────────
+function visibilityGate(el) {
+  let onScreen = true;
+  if ("IntersectionObserver" in window && el) {
+    new IntersectionObserver((es) => { onScreen = es[0].isIntersecting; }, { threshold: 0.2 }).observe(el);
+  }
+  return async () => { while (!onScreen || document.visibilityState !== "visible") await sleep(400); };
+}
 
-if (typed && dest && !reduced) {
-  const examples = [
-    ["standup", "meet.google.com/abc-defg-hij", "your 10 am stand-up"],
-    ["budget", "docs.google.com/spreadsheets/d/1xQ7…", "no more digging through Drive"],
-    ["pr/482", "github.com/acme/app/pull/482", "any pull request, by number"],
-    ["flight/6E-2134", "flightradar24.com/data/flights/6e2134", "one template, any flight"],
-    ["itr", "incometax.gov.in", "the real portal, not a look-alike"],
-    ["?wedding venue shortlist", "docs.google.com/document/d/9Fh2…", "found by meaning, not by name"],
+// ── 1. The browser demo ────────────────────────────────────────────────────
+const scenes = [
+  { typed: "go/standup", url: "meet.google.com/abc-defg-hij", title: "Daily stand-up", fav: "meet", page: "meet",
+    caption: "Type <b>go/standup</b> — land in your 10 am meeting. No digging through calendar invites." },
+  { typed: "go/pr/482", url: "github.com/acme/app/pull/482", title: "Fix checkout timeout · #482", fav: "pr", page: "pr",
+    caption: "One link template, any number: <b>go/pr/482</b> opens pull request 482." },
+  { typed: "go/roadmp", url: "go/roadmp", title: "go/roadmp · goli", fav: "goli", page: "typo",
+    caption: "A typo? goli shows what you probably meant — or lets you create <b>go/roadmp</b> on the spot." },
+  { typed: "go/flight/6E-2134", url: "flightradar24.com/data/flights/6e2134", title: "6E 2134 · Flight status", fav: "flight", page: "flight",
+    caption: "Mum's flight lands at seven. <b>go/flight/</b> works with any flight number." },
+  { typed: "go/?q3 sales", url: "go/?q3 sales", title: "Search · goli", fav: "goli", page: "search",
+    caption: "Can't remember the name? Describe it. goli finds <b>go/sales</b> by its description (optional AI)." },
+];
+
+const browser = $("browser");
+if (browser) {
+  const url = $("b-url"), caret = $("b-caret"), omni = $("b-omni"), key = $("b-key");
+  const bar = $("b-progress"), title = $("b-title"), fav = $("b-fav"), caption = $("scene-caption");
+  const pages = browser.querySelectorAll(".pg");
+  const tabs = document.querySelectorAll(".scene");
+  const gate = visibilityGate(browser);
+  let run = 0; // bumps whenever a new sequence starts; older ones stop
+
+  const showPage = (name) => pages.forEach((p) => p.classList.toggle("on", p.dataset.page === name));
+  const select = (i) => tabs.forEach((t, n) => t.setAttribute("aria-selected", String(n === i)));
+
+  function land(s) {
+    caret.classList.add("off");
+    omni.classList.remove("focus");
+    key.classList.remove("on");
+    url.classList.remove("sel");
+    url.textContent = s.url;
+    title.textContent = s.title;
+    fav.className = "b-fav " + s.fav;
+    showPage(s.page);
+    caption.innerHTML = s.caption;
+  }
+
+  async function play(i, id) {
+    const s = scenes[i];
+    select(i);
+    if (reduced) { land(s); return; }
+    await gate();
+    if (id !== run) return;
+    // Click the address bar: the current URL gets selected…
+    omni.classList.add("focus");
+    url.classList.add("sel");
+    await sleep(450);
+    if (id !== run) return;
+    // …then type the go/ link.
+    url.textContent = "";
+    url.classList.remove("sel");
+    caret.classList.remove("off");
+    for (const ch of s.typed) {
+      if (id !== run) return;
+      url.textContent += ch;
+      await sleep(65 + Math.random() * 55);
+    }
+    await sleep(300);
+    if (id !== run) return;
+    key.classList.add("on");
+    await sleep(380);
+    if (id !== run) return;
+    bar.classList.remove("run");
+    void bar.offsetWidth; // restart the transition
+    bar.classList.add("run");
+    await sleep(520);
+    if (id !== run) return;
+    land(s);
+    await sleep(250);
+    bar.classList.remove("run");
+  }
+
+  async function loop(start) {
+    const id = ++run;
+    for (let i = start; ; i = (i + 1) % scenes.length) {
+      await play(i, id);
+      if (id !== run || reduced) return;
+      await sleep(3600);
+      if (id !== run) return;
+    }
+  }
+
+  tabs.forEach((t) => t.addEventListener("click", () => {
+    const i = Number(t.dataset.scene);
+    if (reduced) { ++run; play(i, run); } else { loop(i); }
+  }));
+  if (reduced) { land(scenes[0]); select(0); } else { setTimeout(() => loop(0), 900); }
+}
+
+// ── 2. The phone demo ──────────────────────────────────────────────────────
+const phone = $("phone");
+if (phone) {
+  const screens = phone.querySelectorAll(".scr");
+  const icon = $("ios-goli"), input = $("m-input"), go = $("m-go");
+  const show = (name) => screens.forEach((s) => s.classList.toggle("on", s.dataset.scr === name));
+  const placeholder = input.textContent;
+  const gate = visibilityGate(phone);
+
+  if (reduced) {
+    show("app");
+  } else {
+    (async () => {
+      for (;;) {
+        await gate();
+        show("home");
+        input.textContent = placeholder;
+        input.classList.remove("typing");
+        await sleep(1600);
+        icon.classList.add("tap");
+        await sleep(220);
+        icon.classList.remove("tap");
+        show("app");
+        await sleep(900);
+        input.textContent = "";
+        input.classList.add("typing");
+        for (const ch of "standup") { input.textContent += ch; await sleep(110); }
+        await sleep(450);
+        go.classList.add("press");
+        await sleep(160);
+        go.classList.remove("press");
+        await sleep(250);
+        show("dest");
+        await sleep(3200);
+      }
+    })();
+  }
+}
+
+// ── 3. The terminal demo ───────────────────────────────────────────────────
+const term = $("term");
+if (term && !reduced) {
+  const P = '<span class="p">$</span> ';
+  const sessions = [
+    ["goli standup", 'https://meet.google.com/abc-defg-hij  <span class="m">↳ opened in your browser</span>'],
+    ["goli add pr https://github.com/acme/app/pull/{1}", "go/pr → https://github.com/acme/app/pull/{1}"],
+    ["goli find sales", '<span class="m"> 96%</span>  <span class="k">sales</span>      Quarterly sales dashboard\n<span class="m"> 41%</span>  <span class="k">forecast</span>   Revenue forecast sheet'],
+    ["goli check", '<span class="m">✓</span> 24 links ok   <span class="m">✗</span> 1 broken: <span class="k">oldwiki</span>  <span class="m">(404 Not Found)</span>'],
   ];
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const visible = () => document.visibilityState === "visible";
-
-  (async function loop() {
-    let i = 0;
-    await sleep(2600); // let the first example be read
+  const gate = visibilityGate(term);
+  (async () => {
     for (;;) {
-      while (!visible()) await sleep(500);
-      dest.classList.add("hidden");
-      for (let n = typed.textContent.length; n > 0; n--) {
-        typed.textContent = typed.textContent.slice(0, -1);
-        await sleep(28);
+      let done = "";
+      for (const [cmd, out] of sessions) {
+        await gate();
+        let typed = "";
+        for (const ch of cmd) {
+          typed += ch;
+          term.innerHTML = done + P + typed + '<span class="t-caret"></span>';
+          await sleep(45 + Math.random() * 40);
+        }
+        await sleep(350);
+        done += P + cmd + "\n" + out + "\n\n";
+        term.innerHTML = done + P + '<span class="t-caret"></span>';
+        await sleep(1500);
       }
-      i = (i + 1) % examples.length;
-      const [name, url, note] = examples[i];
-      await sleep(260);
-      for (const ch of name) {
-        typed.textContent += ch;
-        await sleep(70 + Math.random() * 60);
-      }
-      await sleep(320);
-      destUrl.textContent = url;
-      destNote.textContent = note;
-      dest.classList.remove("hidden");
-      await sleep(2600);
+      await sleep(2500);
     }
   })();
 }

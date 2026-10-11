@@ -1,6 +1,6 @@
 # goli
 
-**The internet, on first-name terms.** Type `go/standup` and land in your 10 am meeting. Type `go/?the doc with the wedding venues` and goli finds it for you.
+**The internet, on first-name terms.** Type `go/standup` and land in your 10 am meeting. Forgot the name? Type `go/?q3 sales` and goli finds it for you.
 
 **Website:** [goli.theanalogyarchitect.com](https://goli.theanalogyarchitect.com) · part of [The Analogy Architect](https://www.theanalogyarchitect.com)
 
@@ -12,7 +12,7 @@ go/budget                 → https://docs.google.com/spreadsheets/d/1xQ7…/edi
 go/pr/482                 → https://github.com/acme/app/pull/482
 go/flight/6E-2134         → live status for any flight number
 go/roadmp                 → "did you mean go/roadmap?" + one-click create
-go/?wedding venues        → AI search across your links (opt-in)
+go/?q3 sales              → search by description (opt-in AI)
 go/dashboard              → staging or prod, depending on your context
 ```
 
