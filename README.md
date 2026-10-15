@@ -33,10 +33,10 @@ go/dashboard              → staging or prod, depending on your context
 goli runs on **macOS, Windows and Linux**.
 
 ```bash
-go install github.com/chetanparab/goli/cmd/goli@latest   # needs Go 1.25+
+go install github.com/chetanparab/goli/cmd/goli@latest   # needs Go 1.26+
 ```
 
-Or download a prebuilt binary — [macOS (Apple silicon)](https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_arm64.tar.gz) · [macOS (Intel)](https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_amd64.tar.gz) · [Windows](https://github.com/chetanparab/goli/releases/latest/download/goli_windows_amd64.zip) · [Windows ARM](https://github.com/chetanparab/goli/releases/latest/download/goli_windows_arm64.zip) · [Linux](https://github.com/chetanparab/goli/releases/latest/download/goli_linux_amd64.tar.gz) · [Linux ARM](https://github.com/chetanparab/goli/releases/latest/download/goli_linux_arm64.tar.gz) — and put it somewhere on your `PATH`. From a clone, `make install` builds into `~/.local/bin`.
+Or download a prebuilt binary — [macOS (Apple silicon)](https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_arm64.tar.gz) · [macOS (Intel)](https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_amd64.tar.gz) · [Windows](https://github.com/chetanparab/goli/releases/latest/download/goli_windows_amd64.zip) · [Windows ARM](https://github.com/chetanparab/goli/releases/latest/download/goli_windows_arm64.zip) · [Linux](https://github.com/chetanparab/goli/releases/latest/download/goli_linux_amd64.tar.gz) · [Linux ARM](https://github.com/chetanparab/goli/releases/latest/download/goli_linux_arm64.tar.gz) — unpack it and put `goli` somewhere on your `PATH`. On macOS, run `xattr -d com.apple.quarantine goli` once first: the binaries aren't notarized yet, so Gatekeeper blocks them otherwise. From a clone, `make install` builds into `~/.local/bin`.
 
 ## Set up `go/`
 
@@ -165,9 +165,9 @@ hostnames: [go, localhost, 127.0.0.1]   # accepted Host headers ("*.x" matches s
 # allow: [tailscale]                    # other devices (see "Use go/ on your phone")
 # allow_write: false
 # keep_awake: true                      # no idle sleep while goli runs
-ai:
+ai:                                     # easiest to change with `goli ai setup`
   enabled: false                        # opt in
-  provider: claude-code                 # or: anthropic
+  provider: claude-code                 # claude-code | anthropic (= `goli ai use api`)
   send_urls: host                       # host | full | none
   # model: claude-opus-5-5
 networks:

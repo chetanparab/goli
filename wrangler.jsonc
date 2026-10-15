@@ -9,6 +9,6 @@
     "not_found_handling": "404-page"
   },
   "routes": [{ "pattern": "goli.theanalogyarchitect.com", "custom_domain": true }],
-  "workers_dev": true,
+  "workers_dev": false, // served only on the custom domain
   "observability": { "enabled": false }
 }

@@ -37,8 +37,8 @@
 <link rel="preload" href="/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/fraunces-italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/hanken.woff2" as="font" type="font/woff2" crossorigin>
-<script src="/assets/theme.js?v=3d703894ac"></script>
-<link rel="stylesheet" href="/assets/site.css?v=3d703894ac">
+<script src="/assets/theme.js?v=a70aed8d34"></script>
+<link rel="stylesheet" href="/assets/site.css?v=a70aed8d34">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -130,13 +130,13 @@
           <li id="st-enter"><span>2</span>Press Enter</li>
           <li id="st-land"><span>3</span>You're there</li>
         </ol>
-        <p class="scene-caption" id="scene-caption" aria-live="polite">Type <b>go/standup</b> — land in your 10 am meeting. No digging through calendar invites.</p>
-        <div class="scenes" role="tablist" aria-label="Try an example">
-          <button class="scene" role="tab" aria-selected="true" data-scene="0" aria-label="Meeting example"><code>go/standup</code></button>
-          <button class="scene" role="tab" aria-selected="false" data-scene="1" aria-label="Pull request example"><code>go/pr/482</code></button>
-          <button class="scene" role="tab" aria-selected="false" data-scene="2" aria-label="Typo example"><code>go/roadmp</code></button>
-          <button class="scene" role="tab" aria-selected="false" data-scene="3" aria-label="Flight example"><code>go/flight/6E-2134</code></button>
-          <button class="scene" role="tab" aria-selected="false" data-scene="4" aria-label="Search example"><code>go/?q3 sales</code></button>
+        <p class="scene-caption" id="scene-caption" aria-live="off">Type <b>go/standup</b> — land in your 10 am meeting. No digging through calendar invites.</p>
+        <div class="scenes" role="group" aria-label="Try an example">
+          <button type="button" class="scene" aria-pressed="true" data-scene="0"><code>go/standup</code></button>
+          <button type="button" class="scene" aria-pressed="false" data-scene="1"><code>go/pr/482</code></button>
+          <button type="button" class="scene" aria-pressed="false" data-scene="2"><code>go/roadmp</code></button>
+          <button type="button" class="scene" aria-pressed="false" data-scene="3"><code>go/flight/6E-2134</code></button>
+          <button type="button" class="scene" aria-pressed="false" data-scene="4"><code>go/?q3 sales</code></button>
         </div>
       </div>
     </section>
@@ -184,15 +184,14 @@
     <section class="section" aria-labelledby="s2">
       <div class="section-head"><span class="num">ii.</span><h2 class="title" id="s2">And in your <em>terminal</em></h2></div>
       <div class="split wide-first">
-<pre class="term live" id="term" aria-label="Terminal examples"><span class="p">$</span> goli standup
-https://meet.google.com/abc-defg-hij  <span class="m">↳ opened in your browser</span>
+<pre class="term live" id="term" aria-label="Terminal examples"><span class="p">$</span> goli standup        <span class="m"># opens it in your browser</span>
+https://meet.google.com/abc-defg-hij
 
 <span class="p">$</span> goli add pr https://github.com/acme/app/pull/{1}
 go/pr → https://github.com/acme/app/pull/{1}
 
-<span class="p">$</span> goli find sales
-<span class="m"> 96%</span>  <span class="k">sales</span>      Quarterly sales dashboard
-<span class="m"> 41%</span>  <span class="k">forecast</span>   Revenue forecast sheet</pre>
+<span class="p">$</span> goli find revenue
+<span class="m"> 85%</span>  <span class="k">forecast</span>             Revenue forecast sheet</pre>
         <div class="body">
           <p>Open, add, search and health-check links without leaving the keyboard. <code>goli standup</code> opens the link even when the server isn't running.</p>
           <p><code>goli check</code> visits every link and tells you which ones broke; <code>goli doctor</code> checks your whole setup.</p>
@@ -217,7 +216,7 @@ go/pr → https://github.com/acme/app/pull/{1}
         <div class="ai-opt">
           <p class="ai-name">Claude API key</p>
           <p class="ai-tag">A fraction of a cent per search</p>
-          <p class="ai-text">Paste a key from the Anthropic Console — free credits count. It's kept in your system keychain where available, never in a config file.</p>
+          <p class="ai-text">Paste a key from the Anthropic Console — free credits count. It's kept in your system keychain where available — never in config.yaml.</p>
         </div>
       </div>
       <div class="body">
@@ -285,7 +284,7 @@ go/pr → https://github.com/acme/app/pull/{1}
       <div class="section-head"><span class="num">ix.</span><h2 class="title" id="s8">Up in <em>a minute</em></h2></div>
       <div class="body">
         <ol class="steps">
-          <li><strong>Install goli.</strong> Download for <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_arm64.tar.gz">Mac (Apple silicon)</a>, <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_amd64.tar.gz">Mac (Intel)</a>, <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_windows_amd64.zip">Windows</a> or <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_linux_amd64.tar.gz">Linux</a> (<a href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">all downloads</a>) — or, with Go installed:
+          <li><strong>Install goli.</strong> Unzip it and put <code>goli</code> on your <code>PATH</code> (on a Mac, first run <code>xattr -d com.apple.quarantine goli</code>, since the download isn't notarized yet). Download for <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_arm64.tar.gz">Mac (Apple silicon)</a>, <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_amd64.tar.gz">Mac (Intel)</a>, <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_windows_amd64.zip">Windows</a> or <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_linux_amd64.tar.gz">Linux</a> (<a href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">all downloads</a>) — or, with Go installed:
             <pre data-copy><code><span class="p">$ </span>go install github.com/chetanparab/goli/cmd/goli@latest</code></pre></li>
           <li><strong>Point <code>go/</code> at your computer.</strong> <code>goli hosts</code> prints the one command to run (Terminal on Mac and Linux, an Administrator PowerShell on Windows); <code>goli install</code> starts goli at login.
             <pre data-copy><code><span class="p">$ </span>goli hosts
@@ -314,6 +313,6 @@ go/pr → https://github.com/acme/app/pull/{1}
     </div>
   </footer>
 </div>
-<script src="/assets/site.js?v=3d703894ac"></script>
+<script src="/assets/site.js?v=a70aed8d34"></script>
 </body>
 </html>

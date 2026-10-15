@@ -306,9 +306,9 @@ details p{color:var(--ink-soft);margin:10px 0 0}
 .scene{font:400 13px var(--sans);color:var(--ink-soft);background:none;border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;
   transition:color .2s,border-color .2s,background-color .2s}
 .scene:hover{color:var(--ink);border-color:var(--ink-soft)}
-.scene[aria-selected="true"]{color:var(--ink);border-color:var(--accent-fill);background:color-mix(in srgb,var(--accent-fill) 8%,transparent)}
+.scene[aria-pressed="true"]{color:var(--ink);border-color:var(--accent-fill);background:color-mix(in srgb,var(--accent-fill) 8%,transparent)}
 .scene code{font-size:12.5px;color:var(--ink-soft);background:none;border:0;padding:0}
-.scene[aria-selected="true"] code,.scene:hover code{color:var(--accent)}
+.scene[aria-pressed="true"] code,.scene:hover code{color:var(--accent)}
 .scene-caption{text-align:center;font:300 16px/1.55 var(--sans);color:var(--ink-soft);margin:12px auto 0;max-width:40em;min-height:3.1em}
 
 /* ── phone + terminal sections ─────────────────────────── */

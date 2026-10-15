@@ -45,7 +45,7 @@ func init() {
 		return
 	}
 	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
-		version = info.Main.Version
+		version = strings.TrimPrefix(info.Main.Version, "v") // same form as release builds: 0.3.0
 	}
 }
 

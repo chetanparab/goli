@@ -46,4 +46,4 @@ jobs:
         run: tools/deploy/node_modules/.bin/wrangler deploy
       - name: No Cloudflare credentials yet
         if: env.HAS_CLOUDFLARE != 'true'
-        run: echo "::notice title=Deploy skipped::Add CLOUDFLARE_API_TOKEN (Workers Scripts → Edit only) and CLOUDFLARE_ACCOUNT_ID as Actions secrets to publish."
+        run: echo "::notice title=Deploy skipped::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID as Actions secrets to publish. The token needs Account › Workers Scripts: Edit, plus Zone › Workers Routes: Edit and Zone › Zone: Read for the zone serving the custom domain."

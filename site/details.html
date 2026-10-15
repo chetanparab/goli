@@ -26,8 +26,8 @@
 <link rel="apple-touch-icon" href="/assets/icon-180.png">
 <link rel="preload" href="/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/hanken.woff2" as="font" type="font/woff2" crossorigin>
-<script src="/assets/theme.js?v=3d703894ac"></script>
-<link rel="stylesheet" href="/assets/site.css?v=3d703894ac">
+<script src="/assets/theme.js?v=a70aed8d34"></script>
+<link rel="stylesheet" href="/assets/site.css?v=a70aed8d34">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -72,11 +72,12 @@
       <div class="body">
         <h3>macOS</h3>
         <ol class="steps">
-          <li>Install goli (needs <a href="https://go.dev/dl/" rel="noopener">Go 1.25+</a>), or download a binary from the <a href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">latest release</a>.
+          <li>Install goli (needs <a href="https://go.dev/dl/" rel="noopener">Go 1.26+</a>), or download a binary from the <a href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">latest release</a>.
             <pre data-copy><code><span class="p">$ </span>go install github.com/chetanparab/goli/cmd/goli@latest</code></pre></li>
+          <li>Downloaded the binary? Unzip it, move <code>goli</code> to a folder on your <code>PATH</code> (such as <code>~/.local/bin</code>) and, on a Mac, run <code>xattr -d com.apple.quarantine goli</code> once — the download isn't notarized yet.</li>
           <li>Map <code>go</code> to this machine: <code>goli hosts</code> prints a single <code>sudo tee</code> command to run. goli never asks to run itself as root.</li>
           <li>Start it at login with <code>goli install</code>, then check everything with <code>goli doctor</code>.</li>
-          <li>Open <code>http://go/</code> once. After that, plain <code>go/standup</code> works in Chrome, Edge and Firefox.</li>
+          <li>Open <code>http://go/</code> once. After that, plain <code>go/standup</code> works in Chrome and Edge. In Firefox, set <code>browser.fixup.domainwhitelist.go</code> to <code>true</code> in <code>about:config</code> once.</li>
         </ol>
         <h3>Windows</h3>
         <ol class="steps">
@@ -191,6 +192,6 @@ dashboard:                                             <span class="c"># context
     </div>
   </footer>
 </div>
-<script src="/assets/site.js?v=3d703894ac"></script>
+<script src="/assets/site.js?v=a70aed8d34"></script>
 </body>
 </html>

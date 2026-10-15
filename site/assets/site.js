@@ -43,19 +43,38 @@ const dl = $("dl-btn");
 if (dl) {
   const base = "https://github.com/chetanparab/goli/releases/latest/download/";
   const ua = navigator.userAgent || "";
-  const plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
-  const mobile = /Android|iPhone|iPad|iPod/i.test(ua);
-  let label = "", file = "";
-  if (!mobile && /Mac/i.test(plat)) { label = "Download for Mac"; file = "goli_darwin_arm64.tar.gz"; }
-  else if (!mobile && /Win/i.test(plat)) { label = "Download for Windows"; file = "goli_windows_amd64.zip"; }
-  else if (!mobile && /Linux/i.test(plat)) { label = "Download for Linux"; file = "goli_linux_amd64.tar.gz"; }
-  if (file) {
+  const uad = navigator.userAgentData;
+  const plat = (uad && uad.platform) || navigator.platform || "";
+  // iPadOS Safari presents itself as a Mac; a touch screen gives it away.
+  const mobile = /Android|iPhone|iPad|iPod/i.test(ua) || (/Mac/i.test(plat) && navigator.maxTouchPoints > 1);
+  const note = $("dl-note");
+  const offer = (label, file, extra) => {
     dl.href = base + file;
     dl.removeAttribute("rel");
     dl.firstChild.textContent = label + " ";
-  } else if (mobile) {
-    const note = $("dl-note");
+    if (note && extra) note.innerHTML = extra;
+  };
+  const pick = (arch) => {
+    const arm = /arm/i.test(arch || "");
+    if (/Mac/i.test(plat)) {
+      // Browsers don't reliably say which Mac chip they run on, so offer both.
+      if (arch && !arm) offer("Download for Mac (Intel)", "goli_darwin_amd64.tar.gz",
+        'Apple silicon Mac? <a href="' + base + 'goli_darwin_arm64.tar.gz">Get that build</a> · free &amp; open source');
+      else offer("Download for Mac (Apple silicon)", "goli_darwin_arm64.tar.gz",
+        'Intel Mac? <a href="' + base + 'goli_darwin_amd64.tar.gz">Get the Intel build</a> · free &amp; open source');
+    } else if (/Win/i.test(plat)) {
+      offer("Download for Windows", arm ? "goli_windows_arm64.zip" : "goli_windows_amd64.zip");
+    } else if (/Linux/i.test(plat)) {
+      offer("Download for Linux", arm ? "goli_linux_arm64.tar.gz" : "goli_linux_amd64.tar.gz");
+    }
+  };
+  if (mobile) {
     if (note) note.textContent = "goli runs on your computer — install it there, then use it from this phone.";
+  } else if (uad && uad.getHighEntropyValues) {
+    pick("");
+    uad.getHighEntropyValues(["architecture"]).then((v) => pick(v.architecture)).catch(() => {});
+  } else {
+    pick("");
   }
 }
 
@@ -98,7 +117,8 @@ if (browser) {
     el.classList.toggle("done", i < n);
   });
   const showPage = (name) => pages.forEach((p) => p.classList.toggle("on", p.dataset.page === name));
-  const select = (i) => tabs.forEach((t, n) => t.setAttribute("aria-selected", String(n === i)));
+  const select = (i) => tabs.forEach((t, n) => t.setAttribute("aria-pressed", String(n === i)));
+  let startTimer = 0;
 
   function land(s) {
     caret.classList.add("off");
@@ -161,13 +181,16 @@ if (browser) {
   }
 
   tabs.forEach((t) => t.addEventListener("click", () => {
+    clearTimeout(startTimer);
+    // Announce captions only once someone is interacting, not on every autoplay step.
+    caption.setAttribute("aria-live", "polite");
     const i = Number(t.dataset.scene);
     if (reduced) { ++run; play(i, run); } else { loop(i); }
   }));
   // First paint already shows goli at work; the typing loop picks up from there.
   land(scenes[0]);
   select(0);
-  if (!reduced) setTimeout(() => loop(1), 2800);
+  if (!reduced) startTimer = setTimeout(() => loop(1), 2800);
 }
 
 // ── 2. The phone demo ──────────────────────────────────────────────────────
@@ -214,10 +237,10 @@ const term = $("term");
 if (term && !reduced) {
   const P = '<span class="p">$</span> ';
   const sessions = [
-    ["goli standup", 'https://meet.google.com/abc-defg-hij  <span class="m">↳ opened in your browser</span>'],
+    ['goli standup        <span class="m"># opens it in your browser</span>', "https://meet.google.com/abc-defg-hij"],
     ["goli add pr https://github.com/acme/app/pull/{1}", "go/pr → https://github.com/acme/app/pull/{1}"],
-    ["goli find sales", '<span class="m"> 96%</span>  <span class="k">sales</span>      Quarterly sales dashboard\n<span class="m"> 41%</span>  <span class="k">forecast</span>   Revenue forecast sheet'],
-    ["goli check", '<span class="m">✓</span> 24 links ok   <span class="m">✗</span> 1 broken: <span class="k">oldwiki</span>  <span class="m">(404 Not Found)</span>'],
+    ["goli find revenue", '<span class="m"> 85%</span>  <span class="k">forecast</span>             Revenue forecast sheet'],
+    ["goli check", '<span class="m">✗</span>  <span class="k">oldwiki</span>   404 Not Found  https://wiki.example.com/old\n<span class="m">✓</span>  <span class="k">standup</span>   200 OK         https://meet.google.com/abc-defg-hij\ngoli: 1 broken link(s)'],
   ];
   const gate = visibilityGate(term);
   (async () => {
@@ -225,8 +248,9 @@ if (term && !reduced) {
       let done = "";
       for (const [cmd, out] of sessions) {
         await gate();
+        const plain = cmd.replace(/<[^>]+>/g, "");
         let typed = "";
-        for (const ch of cmd) {
+        for (const ch of plain) {
           typed += ch;
           term.innerHTML = done + P + typed + '<span class="t-caret"></span>';
           await sleep(45 + Math.random() * 40);

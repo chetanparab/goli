@@ -17,6 +17,17 @@ for (const page of pages) {
   if (!/<title>[^<]+<\/title>/.test(html)) where("missing <title>");
   if (!/<meta name="description" content="[^"]+">/.test(html)) where("missing description");
   if (page !== "404.html" && !/<link rel="canonical" href="https:\/\/goli\.theanalogyarchitect\.com/.test(html)) where("missing canonical");
+  const ids = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
+  for (const [, frag] of html.matchAll(/href="#([^"]+)"/g)) {
+    if (!ids.has(frag)) where(`broken in-page link #${frag}`);
+  }
+  for (const [, path, frag] of html.matchAll(/href="(\/[^"#?]*)(?:\?[^"#]*)?#([^"]+)"/g)) {
+    const file = path === "/" ? "index.html" : path.slice(1) + (path.endsWith(".html") ? "" : ".html");
+    try {
+      const other = readFileSync(join(root, file), "utf8");
+      if (!new RegExp(`\\sid="${frag}"`).test(other)) where(`broken link ${path}#${frag}`);
+    } catch { /* missing pages are reported below */ }
+  }
   for (const [, ref] of html.matchAll(/(?:href|src)="(\/[^"#?]*)/g)) {
     const path = ref === "/" ? "index.html" : ref.slice(1);
     const candidates = [path, `${path}.html`, join(path, "index.html")];
