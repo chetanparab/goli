@@ -335,6 +335,14 @@ details p{color:var(--ink-soft);margin:10px 0 0}
 .term.live{min-height:300px}
 .t-caret{display:inline-block;width:7px;height:1.1em;background:#FF6B35;vertical-align:-.2em;animation:blink 1.05s steps(1) infinite}
 
+/* ── AI options ──────────────────────────────────────────── */
+.ai-options{margin:4px 0 26px 140px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.ai-opt{border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;background:var(--surface)}
+.ai-opt:nth-child(2),.ai-opt:nth-child(3){border-top:2px solid var(--accent-fill)}
+.ai-name{font:400 20px/1.2 var(--serif);margin:0 0 4px}
+.ai-tag{font:500 10px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.ai-text{font:300 15px/1.6 var(--sans);color:var(--ink-soft);margin:0}
+
 /* ── small screens ─────────────────────────────────────── */
 @media (max-width:1020px){
   .hero-stage{grid-template-columns:minmax(0,1fr);gap:28px;padding-top:28px}
@@ -369,7 +377,8 @@ details p{color:var(--ink-soft);margin:10px 0 0}
   .byline{font-size:9.5px;letter-spacing:.12em}
   .section{padding-top:64px}
   .section-head{grid-template-columns:1fr;gap:8px}
-  .body,.compare,.principles,.manifesto,.toc,.see,.versus,.table-wrap,.after-table{margin-left:0}
+  .body,.compare,.principles,.manifesto,.toc,.see,.versus,.table-wrap,.after-table,.ai-options{margin-left:0}
+  .ai-options{grid-template-columns:minmax(0,1fr)}
   .see{grid-template-columns:minmax(0,1fr)}
   .principles{grid-template-columns:1fr}
   td:first-child{white-space:normal}

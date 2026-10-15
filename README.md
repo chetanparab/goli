@@ -22,10 +22,10 @@ go/dashboard              → staging or prod, depending on your context
 |---|---|
 | **Links as code** | One readable `links.yaml`. Keep it in git, review changes in PRs, and run `goli check` to catch dead links. Edits made from the UI or CLI keep your ordering and almost all comments. |
 | **Smart fallback** | A typo or unknown key shows the closest matches and a form to create the link right there. |
-| **Semantic search** | Opt-in: `go/?words` asks Claude (via your Claude Code login, or the API) which link you mean and jumps straight there when it's sure. Without AI, fast local fuzzy search does the job. |
+| **AI, your way** | `go/?words` finds a link by what it's about. Choose **Off** (built-in typo-tolerant search, nothing leaves your computer), **Claude Code** (your Claude subscription) or **your own Claude API key**, with `goli ai setup` or the settings page. |
 | **Parameters** | `{1}`, `{name}`, `{*}` placeholders, or just add path segments: `go/gh/owner/repo`. |
 | **Context-aware links** | One key, different destinations by environment (`goli ctx set env=staging`), network (home/office/VPN), time of day or weekday. |
-| **Terminal & launcher** | `goli standup` opens a link without the server; `goli find …` searches; a Raycast script command is included. |
+| **Everywhere** | macOS, Windows and Linux; the terminal (`goli standup`, `goli find …`) and Raycast; and your iPhone or Android phone over Tailscale, where you can add and edit links too. |
 | **Private by default** | The server only answers your own machine (and devices you allow), and refuses DNS rebinding, cross-site writes, framing and other sites triggering searches. |
 
 ## Install

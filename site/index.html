@@ -37,8 +37,8 @@
 <link rel="preload" href="/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/fraunces-italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/hanken.woff2" as="font" type="font/woff2" crossorigin>
-<script src="/assets/theme.js?v=99ae8c5f50"></script>
-<link rel="stylesheet" href="/assets/site.css?v=99ae8c5f50">
+<script src="/assets/theme.js?v=3d703894ac"></script>
+<link rel="stylesheet" href="/assets/site.css?v=3d703894ac">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -200,8 +200,34 @@ go/pr → https://github.com/acme/app/pull/{1}
       </div>
     </section>
 
+    <section class="section" id="ai" aria-labelledby="s-ai">
+      <div class="section-head"><span class="num">iii.</span><h2 class="title" id="s-ai">Search by meaning, <em>with the AI you already have</em></h2></div>
+      <div class="body"><p>Forgot what you called a link? Type <code>go/?</code> and describe it. You choose what powers that search — and you can change your mind any time with <code>goli ai setup</code> or goli's settings page.</p></div>
+      <div class="ai-options">
+        <div class="ai-opt">
+          <p class="ai-name">Off</p>
+          <p class="ai-tag">Default</p>
+          <p class="ai-text">goli's built-in search forgives typos and matches descriptions. Nothing leaves your computer.</p>
+        </div>
+        <div class="ai-opt">
+          <p class="ai-name">Claude Code</p>
+          <p class="ai-tag">Your Claude subscription</p>
+          <p class="ai-text">Already signed in to Claude Code? goli uses that login — no API key, no separate bill.</p>
+        </div>
+        <div class="ai-opt">
+          <p class="ai-name">Claude API key</p>
+          <p class="ai-tag">A fraction of a cent per search</p>
+          <p class="ai-text">Paste a key from the Anthropic Console — free credits count. It's kept in your system keychain where available, never in a config file.</p>
+        </div>
+      </div>
+      <div class="body">
+        <pre data-copy><code><span class="p">$ </span>goli ai setup</code></pre>
+        <p class="fine">Everyone connects their own account; goli never ships anyone's key. Only your query and your links' names, descriptions and site names are sent — and only when you search.</p>
+      </div>
+    </section>
+
     <section class="section" aria-labelledby="s3">
-      <div class="section-head"><span class="num">iii.</span><h2 class="title" id="s3">Name it <em>once</em></h2></div>
+      <div class="section-head"><span class="num">iv.</span><h2 class="title" id="s3">Name it <em>once</em></h2></div>
       <div class="compare">
         <div class="compare-row"><span class="tag">Before</span><span class="long">https://lookerstudio.google.com/reporting/5f2c9a1e-7b3d-4e8a-9c41-2d6f0b8e1a37/page/p_x4kq9z2mcd?params=%7B%22quarter%22%3A%22Q3%22%7D</span></div>
         <div class="compare-row"><span class="tag">After</span><span class="short">go<i>/</i>sales</span></div>
@@ -210,7 +236,7 @@ go/pr → https://github.com/acme/app/pull/{1}
     </section>
 
     <section class="section" aria-labelledby="s4">
-      <div class="section-head"><span class="num">iv.</span><h2 class="title" id="s4">Why not just <em>bookmarks?</em></h2></div>
+      <div class="section-head"><span class="num">v.</span><h2 class="title" id="s4">Why not just <em>bookmarks?</em></h2></div>
       <div class="versus">
         <table>
           <tr><th>Bookmarks</th><th>goli</th></tr>
@@ -224,10 +250,10 @@ go/pr → https://github.com/acme/app/pull/{1}
     </section>
 
     <section class="section" aria-labelledby="s5">
-      <div class="section-head"><span class="num">v.</span><h2 class="title" id="s5">Small tool, <em>careful details</em></h2></div>
+      <div class="section-head"><span class="num">vi.</span><h2 class="title" id="s5">Small tool, <em>careful details</em></h2></div>
       <ol class="principles">
         <li><h3>Typos forgiven</h3><p>A wrong name shows the closest matches, and a missing one can be created right there on the page.</p></li>
-        <li><h3>Search by meaning</h3><p>Opt in, and <code>go/?</code> plus a description finds the link you meant, then opens it when it's sure.</p></li>
+        <li><h3>Search by meaning</h3><p><code>go/?</code> plus a description finds the link you meant — powered by your Claude Code login or your own API key, or off entirely.</p></li>
         <li><h3>One name, many places</h3><p><code>go/dashboard</code> can open staging at work and prod on call — by environment, network or time of day.</p></li>
         <li><h3>Links you can review</h3><p>Everything lives in one readable file. Keep it in git, review changes, and let <code>goli check</code> catch dead links.</p></li>
         <li><h3>Everywhere you are</h3><p>Mac, Windows or Linux; the address bar, the terminal, Raycast — and your iPhone or Android phone.</p></li>
@@ -236,7 +262,7 @@ go/pr → https://github.com/acme/app/pull/{1}
     </section>
 
     <section class="section" aria-labelledby="s6">
-      <div class="section-head"><span class="num">vi.</span><h2 class="title" id="s6">How it <em>compares</em></h2></div>
+      <div class="section-head"><span class="num">vii.</span><h2 class="title" id="s6">How it <em>compares</em></h2></div>
       <div class="table-wrap">
         <table class="compare-table">
           <tr><th></th><th class="us">goli</th><th>tailscale/golink</th><th>Trotto</th><th>GoLinks</th></tr>
@@ -251,12 +277,12 @@ go/pr → https://github.com/acme/app/pull/{1}
     </section>
 
     <section class="section" aria-labelledby="s7">
-      <div class="section-head"><span class="num">vii.</span><h2 class="title" id="s7">Yours, <em>entirely</em></h2></div>
+      <div class="section-head"><span class="num">viii.</span><h2 class="title" id="s7">Yours, <em>entirely</em></h2></div>
       <p class="manifesto">Your links live in one file, on your computer. No sign-up, no sync service, no analytics — and AI stays off until you switch it on. <em>Just the shortest way back</em> to the pages that matter.</p>
     </section>
 
     <section class="section" id="start" aria-labelledby="s8">
-      <div class="section-head"><span class="num">viii.</span><h2 class="title" id="s8">Up in <em>a minute</em></h2></div>
+      <div class="section-head"><span class="num">ix.</span><h2 class="title" id="s8">Up in <em>a minute</em></h2></div>
       <div class="body">
         <ol class="steps">
           <li><strong>Install goli.</strong> Download for <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_arm64.tar.gz">Mac (Apple silicon)</a>, <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_amd64.tar.gz">Mac (Intel)</a>, <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_windows_amd64.zip">Windows</a> or <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_linux_amd64.tar.gz">Linux</a> (<a href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">all downloads</a>) — or, with Go installed:
@@ -266,8 +292,10 @@ go/pr → https://github.com/acme/app/pull/{1}
 <span class="p">$ </span>goli install</code></pre></li>
           <li><strong>Add your first link</strong>, then type <code>go/standup</code> in your browser.
             <pre data-copy><code><span class="p">$ </span>goli add standup https://meet.google.com/abc-defg-hij</code></pre></li>
+          <li><strong>Optional: turn on AI search</strong> with your Claude Code login or an API key.
+            <pre data-copy><code><span class="p">$ </span>goli ai setup</code></pre></li>
         </ol>
-        <p>Phones, AI search and every option are in <a href="/details">how it works</a>.</p>
+        <p>Phones, AI options and every setting are in <a href="/details">how it works</a>.</p>
       </div>
     </section>
   </main>
@@ -286,6 +314,6 @@ go/pr → https://github.com/acme/app/pull/{1}
     </div>
   </footer>
 </div>
-<script src="/assets/site.js?v=99ae8c5f50"></script>
+<script src="/assets/site.js?v=3d703894ac"></script>
 </body>
 </html>
