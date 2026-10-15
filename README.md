@@ -150,6 +150,7 @@ goli serve                     run the server in the foreground
 goli install | uninstall       start/stop the server at login (macOS, Windows, Linux)
 goli restart                   restart the background server (after an upgrade)
 goli hosts [-apply]            print (or, with admin rights, add) the hosts-file entry
+goli ai [setup|use|key|test]   choose how AI search is powered
 goli doctor                    check that everything is wired up
 ```
 
