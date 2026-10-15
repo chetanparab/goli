@@ -56,11 +56,17 @@ func (c *Config) SetAI(provider, model string) error {
 	if err := enc.Encode(&doc); err != nil {
 		return err
 	}
-	tmp := c.Path() + ".tmp"
+	// Write through a symlink (dotfiles setups) instead of replacing it.
+	path := c.Path()
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		path = resolved
+	}
+	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, buf.Bytes(), 0o600); err != nil {
 		return err
 	}
-	if err := os.Rename(tmp, c.Path()); err != nil {
+	if err := os.Rename(tmp, path); err != nil {
+		_ = os.Remove(tmp)
 		return err
 	}
 	c.AI.Enabled = enabled

@@ -41,9 +41,9 @@ func (s *Server) settingsPage(w http.ResponseWriter, r *http.Request) {
 	var n *notice
 	switch r.URL.Query().Get("done") {
 	case "saved":
-		n = &notice{true, "Saved. AI search now uses " + providerName(ai.Active(s.cfg.AI)) + "."}
+		n = &notice{true, "Saved. AI search now uses " + providerName(ai.Active(s.aiSettings())) + "."}
 	case "key-saved":
-		n = &notice{true, "API key saved in " + s.keys.Where() + "."}
+		n = &notice{true, "API key saved in " + s.keys.Where(ai.APIKeyName) + "."}
 	case "key-removed":
 		n = &notice{true, "API key removed."}
 	}
@@ -54,22 +54,27 @@ func (s *Server) renderSettings(w http.ResponseWriter, r *http.Request, n *notic
 	ctx, cancel := context.WithTimeout(r.Context(), 12*time.Second)
 	defer cancel()
 	_, keyErr := s.keys.Get(ai.APIKeyName)
+	cur := s.aiSettings()
 	s.render(w, http.StatusOK, "settings.html", map[string]any{
-		"Options":          ai.Options(ctx, s.cfg.AI, s.keys),
-		"Active":           ai.Active(s.cfg.AI),
-		"Model":            s.cfg.AI.Model,
+		"Options":          ai.Options(ctx, cur, s.keys),
+		"Active":           ai.Active(cur),
+		"Model":            cur.Model,
 		"APIModels":        ai.APIModels,
 		"ClaudeCodeModels": ai.ClaudeCodeModels,
 		"DefaultAPIModel":  ai.DefaultAPIModel,
 		"HasSavedKey":      keyErr == nil,
-		"KeyWhere":         s.keys.Where(),
-		"SendURLs":         s.cfg.AI.SendURLs,
+		"KeyWhere":         s.keys.Where(ai.APIKeyName),
+		"SendURLs":         cur.SendURLs,
 		"Notice":           n,
 	})
 }
 
 func (s *Server) settingsAI(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxFormBytes)
+	if strings.TrimSpace(r.FormValue("provider")) == "" {
+		http.Error(w, "choose an option first", http.StatusBadRequest)
+		return
+	}
 	provider := ai.NormalizeProvider(r.FormValue("provider"))
 	model := ""
 	switch provider {
@@ -85,12 +90,17 @@ func (s *Server) settingsAI(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unknown option", http.StatusBadRequest)
 		return
 	}
-	if err := s.cfg.SetAI(provider, model); err != nil {
+	// One save at a time: write the file, then install exactly what was written.
+	s.saveMu.Lock()
+	defer s.saveMu.Unlock()
+	draft := *s.cfg // a private copy; SetAI updates draft.AI, never the shared config
+	draft.AI = s.aiSettings()
+	if err := draft.SetAI(provider, model); err != nil {
 		s.log.Error("save AI settings", "err", err)
 		http.Error(w, "couldn't save settings: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	s.reloadAI()
+	s.applyAI(draft.AI)
 	http.Redirect(w, r, "/_/settings?done=saved", http.StatusSeeOther)
 }
 
@@ -137,5 +147,5 @@ func (s *Server) settingsTest(w http.ResponseWriter, r *http.Request) {
 		s.renderSettings(w, r, &notice{false, "Test failed: " + msg})
 		return
 	}
-	s.renderSettings(w, r, &notice{true, fmt.Sprintf("It works: %s found the right link in %.1fs.", providerName(ai.Active(s.cfg.AI)), took.Seconds())})
+	s.renderSettings(w, r, &notice{true, fmt.Sprintf("It works: %s found the right link in %.1fs.", providerName(ai.Active(s.aiSettings())), took.Seconds())})
 }

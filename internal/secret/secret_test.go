@@ -43,3 +43,27 @@ func TestRejectsOddValues(t *testing.T) {
 		}
 	}
 }
+
+// A key in the private file (e.g. saved when the keyring was unavailable) is
+// still found, and Delete removes it.
+func TestFileFallbackIsRead(t *testing.T) {
+	s := Store{Dir: t.TempDir()}
+	if err := s.file().set("goli-test-fallback", "sk-ant-api03-fallback_1"); err != nil {
+		t.Fatal(err)
+	}
+	if v, err := s.Get("goli-test-fallback"); err != nil || v != "sk-ant-api03-fallback_1" {
+		t.Fatalf("got %q %v", v, err)
+	}
+	if w := s.Where("goli-test-fallback"); w != s.file().where() {
+		t.Errorf("Where = %q", w)
+	}
+	if b, err := os.ReadFile(filepath.Join(s.Dir, "secrets", ".gitignore")); err != nil || string(b) != "*\n" {
+		t.Errorf(".gitignore: %q %v", b, err)
+	}
+	if err := s.Delete("goli-test-fallback"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Get("goli-test-fallback"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("after delete: %v", err)
+	}
+}

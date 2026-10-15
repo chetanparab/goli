@@ -131,7 +131,7 @@ dashboard:                                             <span class="c"># context
           <tr><td>Claude Code</td><td>Your Claude Code login — your Claude subscription</td><td>Claude Code, signed in</td></tr>
           <tr><td>Claude API key</td><td>The Claude API, a fraction of a cent per search (free credits count)</td><td>A key from console.anthropic.com</td></tr>
         </table>
-        <p><strong>Everyone uses their own account.</strong> goli never ships anyone's login or key. A pasted key goes into your macOS Keychain or Linux keyring (or a private file elsewhere) — never into config files or logs. A built-in test checks it works using three made-up links, so your own links aren't sent.</p>
+        <p><strong>Everyone uses their own account.</strong> goli never ships anyone's login or key. A pasted key goes into your macOS Keychain or Linux keyring (or a private file on Windows and machines without a keyring) — never into config files or logs. A built-in test checks it works using three made-up links, so your own links aren't sent.</p>
         <p><strong>Exactly what is sent, and only when you search:</strong> your query, plus each link's name, description, tags and <em>host name</em> (say, <code>docs.google.com</code> — not the full address). Opening a link never calls AI, and if another website tries to trigger a search behind your back, goli quietly falls back to local search.</p>
       </div>
     </section>

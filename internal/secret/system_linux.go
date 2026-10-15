@@ -3,6 +3,7 @@
 package secret
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -20,16 +21,20 @@ func systemBackend() backend {
 type secretTool struct{ bin string }
 
 func (t secretTool) set(name, value string) error {
-	cmd := exec.Command(t.bin, "store", "--label=goli: "+name, "service", "goli", "key", name)
-	cmd.Stdin = strings.NewReader(value) // never on the command line
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("secret-tool store: %w: %s", err, out)
+	if _, err := run(value, t.bin, "store", "--label=goli: "+name, "service", "goli", "key", name); err != nil {
+		return fmt.Errorf("secret-tool store: %w", err)
 	}
 	return nil
 }
 
 func (t secretTool) get(name string) (string, error) {
-	out, err := exec.Command(t.bin, "lookup", "service", "goli", "key", name).Output()
+	out, err := run("", t.bin, "lookup", "service", "goli", "key", name)
+	var exit *exec.ExitError
+	if err != nil && !errors.As(err, &exit) {
+		return "", fmt.Errorf("secret-tool lookup: %w", err) // timed out or couldn't start
+	}
+	// secret-tool exits 1 with no output both for "not found" and for "no
+	// Secret Service"; Store.Get then checks the file fallback.
 	v := strings.TrimSpace(string(out))
 	if err != nil || v == "" {
 		return "", ErrNotFound
@@ -38,7 +43,7 @@ func (t secretTool) get(name string) (string, error) {
 }
 
 func (t secretTool) del(name string) error {
-	_ = exec.Command(t.bin, "clear", "service", "goli", "key", name).Run()
+	_, _ = run("", t.bin, "clear", "service", "goli", "key", name) // missing is fine
 	return nil
 }
 

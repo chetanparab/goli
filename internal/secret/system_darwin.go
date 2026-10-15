@@ -3,6 +3,7 @@
 package secret
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -16,13 +17,13 @@ func systemBackend() backend { return keychain{} }
 
 func service(name string) string { return "goli: " + name }
 
+const security = "/usr/bin/security"
+
 func (keychain) set(name, value string) error {
-	cmd := exec.Command("/usr/bin/security", "-i")
 	// Set() has already restricted value to [A-Za-z0-9_-], so quoting is safe.
-	cmd.Stdin = strings.NewReader(fmt.Sprintf("add-generic-password -U -a goli -s %q -w %q\n", service(name), value))
-	out, err := cmd.CombinedOutput()
+	out, err := run(fmt.Sprintf("add-generic-password -U -a goli -s %q -w %q\n", service(name), value), security, "-i")
 	if err != nil {
-		return fmt.Errorf("saving to Keychain failed: %w: %s", err, out)
+		return fmt.Errorf("saving to Keychain failed: %w", err)
 	}
 	if strings.Contains(string(out), "error") {
 		return fmt.Errorf("saving to Keychain failed: %s", out)
@@ -30,17 +31,31 @@ func (keychain) set(name, value string) error {
 	return nil
 }
 
+// errItemNotFound is security's exit status for a missing item.
+const errItemNotFound = 44
+
 func (keychain) get(name string) (string, error) {
-	out, err := exec.Command("/usr/bin/security", "find-generic-password", "-a", "goli", "-s", service(name), "-w").Output()
+	out, err := run("", security, "find-generic-password", "-a", "goli", "-s", service(name), "-w")
+	var exit *exec.ExitError
+	if errors.As(err, &exit) && exit.ExitCode() == errItemNotFound {
+		return "", ErrNotFound
+	}
+	if err != nil {
+		return "", fmt.Errorf("reading the Keychain failed: %w", err)
+	}
 	v := strings.TrimSpace(string(out))
-	if err != nil || v == "" {
+	if v == "" {
 		return "", ErrNotFound
 	}
 	return v, nil
 }
 
 func (keychain) del(name string) error {
-	_ = exec.Command("/usr/bin/security", "delete-generic-password", "-a", "goli", "-s", service(name)).Run()
+	_, err := run("", security, "delete-generic-password", "-a", "goli", "-s", service(name))
+	var exit *exec.ExitError
+	if err != nil && (!errors.As(err, &exit) || exit.ExitCode() != errItemNotFound) {
+		return fmt.Errorf("removing from Keychain failed: %w", err)
+	}
 	return nil
 }
 

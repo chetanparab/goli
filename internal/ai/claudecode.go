@@ -56,7 +56,11 @@ func (c *ClaudeCode) Binary() (string, error) {
 // redirect or break the child's authentication.
 func cleanEnv() []string {
 	var env []string
-	for _, k := range []string{"HOME", "USER", "LOGNAME", "PATH", "LANG", "TMPDIR", "SHELL"} {
+	for _, k := range []string{
+		"HOME", "USER", "LOGNAME", "PATH", "LANG", "TMPDIR", "SHELL",
+		// Windows needs these to find the user's profile and run programs.
+		"USERPROFILE", "APPDATA", "LOCALAPPDATA", "TEMP", "TMP", "SystemRoot", "ComSpec", "PATHEXT", "ProgramFiles",
+	} {
 		if v, ok := os.LookupEnv(k); ok {
 			env = append(env, k+"="+v)
 		}

@@ -61,8 +61,14 @@ type Server struct {
 	log      *slog.Logger
 	keys     secret.Store
 
+	// aiMu guards the AI settings and ranker. s.cfg.AI is only the value at
+	// startup: settings changes go through saveMu and update s.ai, so request
+	// handlers never read a config another goroutine is writing.
 	aiMu   sync.RWMutex
+	ai     config.AI
 	ranker ai.Ranker // nil when AI search is off
+	aiGen  uint64    // bumps on every reload; stale searches don't fill the cache
+	saveMu sync.Mutex
 
 	aiSem   chan struct{}
 	cacheMu sync.Mutex
@@ -81,23 +87,33 @@ func New(cfg *config.Config, store *links.Store, log *slog.Logger) *Server {
 		keys:  cfg.Keys(),
 		aiSem: make(chan struct{}, aiConcurrency), cache: map[string]cachedPicks{},
 	}
-	s.reloadAI()
+	s.applyAI(cfg.AI)
 	return s
 }
 
-// reloadAI rebuilds the AI ranker from the current settings, so a change in
-// the settings page takes effect without a restart.
-func (s *Server) reloadAI() {
-	r, err := ai.New(s.cfg.AI, s.keys)
+// applyAI installs AI settings and rebuilds the ranker, so a change in the
+// settings page takes effect without a restart.
+func (s *Server) applyAI(settings config.AI) {
+	r, err := ai.New(settings, s.keys)
 	if err != nil {
 		s.log.Error("AI search disabled", "err", err)
 	}
 	s.aiMu.Lock()
-	s.ranker = r
+	s.ai, s.ranker = settings, r
+	s.aiGen++
 	s.aiMu.Unlock()
 	s.cacheMu.Lock()
 	clear(s.cache)
 	s.cacheMu.Unlock()
+}
+
+// reloadAI rebuilds the ranker with the current settings (e.g. after a key change).
+func (s *Server) reloadAI() { s.applyAI(s.aiSettings()) }
+
+func (s *Server) aiSettings() config.AI {
+	s.aiMu.RLock()
+	defer s.aiMu.RUnlock()
+	return s.ai
 }
 
 func (s *Server) getRanker() ai.Ranker {
@@ -181,7 +197,7 @@ func (s *Server) handleGo(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		s.render(w, http.StatusOK, "home.html", map[string]any{
-			"Links": s.store.All(), "AI": s.getRanker() != nil, "AIName": providerName(ai.Active(s.cfg.AI)),
+			"Links": s.store.All(), "AI": s.getRanker() != nil, "AIName": providerName(ai.Active(s.aiSettings())),
 			"Local": isLocal(r), "CanWrite": canWrite(r), "Form": form,
 		})
 		return
@@ -372,7 +388,9 @@ func (s *Server) rankAI(ctx context.Context, q string, all []*links.Link) ([]ai.
 	}
 	ctx, cancel := context.WithTimeout(ctx, aiTimeout)
 	defer cancel()
-	r := s.getRanker()
+	s.aiMu.RLock()
+	r, gen := s.ranker, s.aiGen
+	s.aiMu.RUnlock()
 	if r == nil {
 		return nil, errors.New("AI search is off")
 	}
@@ -381,6 +399,12 @@ func (s *Server) rankAI(ctx context.Context, q string, all []*links.Link) ([]ai.
 		return nil, err
 	}
 
+	s.aiMu.RLock()
+	stale := gen != s.aiGen // AI settings changed while this search ran
+	s.aiMu.RUnlock()
+	if stale {
+		return picks, nil
+	}
 	s.cacheMu.Lock()
 	if len(s.cache) >= aiCacheSize {
 		clear(s.cache)

@@ -18,6 +18,8 @@ const Name = "macOS"
 // port 80 that way (goli's guard still refuses non-local clients).
 const DefaultListen = ":80"
 
+var hostsLines = []string{"127.0.0.1\tgo", "::1\tgo"}
+
 // OpenURL opens u in the default browser.
 func OpenURL(u string) error { return exec.Command("open", u).Run() }
 

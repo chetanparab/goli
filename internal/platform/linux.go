@@ -3,12 +3,14 @@
 package platform
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Name is a human name for this OS.
@@ -17,6 +19,8 @@ const Name = "Linux"
 // DefaultListen binds port 80 on all interfaces; goli's guard refuses
 // non-local clients. Binding needs `setcap cap_net_bind_service=+ep`.
 const DefaultListen = ":80"
+
+var hostsLines = []string{"127.0.0.1\tgo", "::1\tgo"}
 
 // OpenURL opens u in the default browser.
 func OpenURL(u string) error { return exec.Command("xdg-open", u).Run() }
@@ -42,8 +46,19 @@ func KeepAwake(pid int) error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	go func() { _ = cmd.Wait() }()
-	return nil
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+	// systemd-inhibit exits at once when it can't take the lock (no logind,
+	// no D-Bus session); report that instead of claiming the machine stays awake.
+	select {
+	case err := <-done:
+		if err == nil {
+			err = errors.New("exited immediately")
+		}
+		return fmt.Errorf("systemd-inhibit: %w", err)
+	case <-time.After(time.Second):
+		return nil
+	}
 }
 
 // ── systemd user service ─────────────────────────────────────────────────

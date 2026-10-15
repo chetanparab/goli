@@ -10,7 +10,8 @@ import (
 )
 
 // HostsLines are the entries that make the name "go" mean this machine.
-var HostsLines = []string{"127.0.0.1\tgo", "::1\tgo"}
+// Windows gets only the IPv4 line because goli listens on 127.0.0.1 there.
+var HostsLines = hostsLines
 
 // HostsHas reports whether hosts content already maps line's name to its address.
 func HostsHas(hosts, line string) bool {

@@ -39,7 +39,10 @@ func canWrite(r *http.Request) bool {
 
 // guard enforces who may talk to the server and what they may do:
 //
-//   - loopback clients (this machine) get full access;
+//   - loopback clients (this machine) get full access, unless the request
+//     came through a local reverse proxy (e.g. `tailscale serve`): then it's
+//     really another device, so it's read-only unless allow_write is set and
+//     never counts as local for the settings page;
 //   - clients in `allow` networks are let in only if the connection also
 //     arrived on an address in those networks (e.g. this Mac's Tailscale IP,
 //     not a LAN that happens to use 100.64/10), and are read-only unless
@@ -62,10 +65,14 @@ func (s *Server) guard(next http.Handler) http.Handler {
 		w.Header().Set("Content-Security-Policy", csp)
 
 		remote := addrIP(r.RemoteAddr)
+		loopback := remote != nil && remote.IsLoopback()
+		local := loopback && !proxied(r)
 		write := false
 		switch {
-		case remote != nil && remote.IsLoopback():
+		case local:
 			write = true
+		case loopback:
+			write = s.cfg.AllowWrite
 		case clients.contains(remote) && clients.contains(localIP(r)):
 			write = s.cfg.AllowWrite
 		default:
@@ -81,9 +88,20 @@ func (s *Server) guard(next http.Handler) http.Handler {
 			return
 		}
 		ctx := context.WithValue(r.Context(), writeKey, write)
-		ctx = context.WithValue(ctx, localKey, remote != nil && remote.IsLoopback())
+		ctx = context.WithValue(ctx, localKey, local)
 		inner.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// proxied reports whether a request carries headers that a reverse proxy adds
+// when it forwards another machine's request.
+func proxied(r *http.Request) bool {
+	for _, h := range []string{"X-Forwarded-For", "Forwarded", "X-Real-Ip", "Tailscale-User-Login"} {
+		if r.Header.Get(h) != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func addrIP(hostport string) net.IP {

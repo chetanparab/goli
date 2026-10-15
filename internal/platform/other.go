@@ -13,6 +13,8 @@ const Name = "this OS"
 // DefaultListen binds port 80 on all interfaces.
 const DefaultListen = ":80"
 
+var hostsLines = []string{"127.0.0.1\tgo", "::1\tgo"}
+
 var errUnsupported = errors.New("not supported on this OS yet; run `goli serve` under your service manager")
 
 // OpenURL opens u in the default browser.

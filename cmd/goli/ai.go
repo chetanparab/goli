@@ -50,6 +50,9 @@ func cmdAI(cfg *config.Config, args []string) error {
 			return errors.New("usage: goli ai use off|claude-code|api [opus|sonnet|haiku]")
 		}
 		provider := ai.NormalizeProvider(args[0])
+		if err := checkProvider(provider); err != nil {
+			return err
+		}
 		model := ""
 		if len(args) > 1 {
 			m, err := modelFor(provider, args[1])
@@ -68,7 +71,7 @@ func cmdAI(cfg *config.Config, args []string) error {
 			notifyServer()
 			return nil
 		}
-		if err := promptKey(cfg); err != nil {
+		if err := promptKey(cfg, bufio.NewReader(os.Stdin)); err != nil {
 			return err
 		}
 		notifyServer()
@@ -129,7 +132,7 @@ func aiSetup(cfg *config.Config) error {
 		model = chooseModel(in, ai.ClaudeCodeModels)
 	case ai.ProviderAnthropic:
 		if !o.Ready || strings.EqualFold(ask(in, "Save a new API key now? [y/N]", "n"), "y") {
-			if err := promptKey(cfg); err != nil {
+			if err := promptKey(cfg, in); err != nil {
 				return err
 			}
 		}
@@ -143,9 +146,7 @@ func aiSetup(cfg *config.Config) error {
 	}
 	if o.ID != ai.ProviderOff {
 		fmt.Println("\nTesting with three made-up links (your own links aren't sent)…")
-		if err := aiTest(cfg); err != nil {
-			return nil // aiTest already explained what went wrong
-		}
+		return aiTest(cfg)
 	}
 	return nil
 }
@@ -177,11 +178,13 @@ func ask(in *bufio.Reader, prompt, def string) string {
 }
 
 // promptKey reads an API key without echoing it and saves it to the keychain.
-func promptKey(cfg *config.Config) error {
+// When stdin isn't a terminal (a pipe), it reads the next line from in, the
+// same reader the rest of setup uses, so buffered input isn't lost.
+func promptKey(cfg *config.Config, in *bufio.Reader) error {
 	fmt.Println("Create a key at https://console.anthropic.com/settings/keys, then paste it here.")
-	fmt.Print("API key (hidden): ")
 	var key string
 	if term.IsTerminal(int(os.Stdin.Fd())) {
+		fmt.Print("API key (hidden): ")
 		b, err := term.ReadPassword(int(os.Stdin.Fd()))
 		fmt.Println()
 		if err != nil {
@@ -189,8 +192,9 @@ func promptKey(cfg *config.Config) error {
 		}
 		key = string(b)
 	} else {
-		line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-		key = line
+		fmt.Fprintln(os.Stderr, "goli: not a terminal, so the key is read from input as-is (it isn't hidden)")
+		fmt.Print("API key: ")
+		key, _ = in.ReadString('\n')
 	}
 	key = strings.TrimSpace(key)
 	if !strings.HasPrefix(key, "sk-ant-") {
@@ -199,16 +203,18 @@ func promptKey(cfg *config.Config) error {
 	if err := cfg.Keys().Set(ai.APIKeyName, key); err != nil {
 		return err
 	}
-	fmt.Println("Saved in", cfg.Keys().Where()+".")
+	fmt.Println("Saved in", cfg.Keys().Where(ai.APIKeyName)+".")
 	return nil
 }
 
+// modelFor accepts a model ID or the first word of its name ("haiku").
 func modelFor(provider, name string) (string, error) {
-	name = strings.ToLower(name)
+	name = strings.ToLower(strings.TrimSpace(name))
 	switch provider {
 	case ai.ProviderAnthropic:
 		for _, m := range ai.APIModels {
-			if m.ID == name || strings.Contains(strings.ToLower(m.Name), name) {
+			first, _, _ := strings.Cut(strings.ToLower(m.Name), " ")
+			if name != "" && (m.ID == name || first == name) {
 				return m.ID, nil
 			}
 		}
@@ -222,11 +228,17 @@ func modelFor(provider, name string) (string, error) {
 	return "", fmt.Errorf("unknown model %q for %s", name, provider)
 }
 
-func aiApply(cfg *config.Config, provider, model string, test bool) error {
+func checkProvider(provider string) error {
 	switch provider {
 	case ai.ProviderOff, ai.ProviderClaudeCode, ai.ProviderAnthropic:
-	default:
-		return fmt.Errorf("unknown option %q (use off, claude-code or api)", provider)
+		return nil
+	}
+	return fmt.Errorf("unknown option %q (use off, claude-code or api)", provider)
+}
+
+func aiApply(cfg *config.Config, provider, model string, test bool) error {
+	if err := checkProvider(provider); err != nil {
+		return err
 	}
 	if err := cfg.SetAI(provider, model); err != nil {
 		return err
@@ -235,7 +247,7 @@ func aiApply(cfg *config.Config, provider, model string, test bool) error {
 	fmt.Println("AI search now uses", name+".")
 	notifyServer()
 	if test && provider != ai.ProviderOff {
-		_ = aiTest(cfg)
+		return aiTest(cfg) // the choice is saved either way; a failed test still exits nonzero
 	}
 	return nil
 }
@@ -251,7 +263,7 @@ func aiTest(cfg *config.Config) error {
 	if err != nil {
 		msg, _, _ := strings.Cut(err.Error(), "\n")
 		fmt.Println("✗ Test failed:", msg)
-		return err
+		return errReported
 	}
 	fmt.Printf("✓ It works — found the right link in %.1fs.\n", took.Seconds())
 	return nil

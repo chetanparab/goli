@@ -73,10 +73,15 @@ Settings live in ~/.config/goli (%AppData%\goli on Windows; override with $GOLI_
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
-		fmt.Fprintln(os.Stderr, "goli:", err)
+		if !errors.Is(err, errReported) {
+			fmt.Fprintln(os.Stderr, "goli:", err)
+		}
 		os.Exit(1)
 	}
 }
+
+// errReported fails a command whose problem was already explained on screen.
+var errReported = errors.New("already reported")
 
 func run(args []string) error {
 	if len(args) == 0 {
@@ -188,9 +193,18 @@ func cmdServe(cfg *config.Config, store *links.Store, args []string) error {
 	}
 	if *background {
 		platform.Detach()
-		platform.WritePID()
+		defer platform.WritePID()()
 	}
 	log := slog.New(slog.NewTextHandler(out, nil))
+	err := serve(cfg, store, log)
+	if err != nil && *logFile != "" {
+		// A detached server has no console; leave the reason in its log.
+		log.Error("goli stopped", "err", err)
+	}
+	return err
+}
+
+func serve(cfg *config.Config, store *links.Store, log *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if cfg.KeepAwake {

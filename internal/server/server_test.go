@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/chetanparab/goli/internal/ai"
@@ -376,6 +377,20 @@ func TestSettingsLocalOnly(t *testing.T) {
 	if w.Code != http.StatusForbidden {
 		t.Errorf("tailnet key save: %d", w.Code)
 	}
+	// A local reverse proxy (tailscale serve) forwards other devices' requests
+	// from 127.0.0.1; those aren't local either.
+	proxy := func(r *http.Request) { r.Header.Set("X-Forwarded-For", "100.101.102.103") }
+	if w := do(h, "GET", "/_/settings", nil, proxy); w.Code != http.StatusForbidden {
+		t.Errorf("proxied settings page: %d", w.Code)
+	}
+	s.cfg.AllowWrite = false
+	h = s.Handler()
+	if w := do(h, "POST", "/_/links/delete", strings.NewReader("key=x"), func(r *http.Request) {
+		proxy(r)
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}); w.Code != http.StatusForbidden {
+		t.Errorf("proxied write without allow_write: %d", w.Code)
+	}
 }
 
 func TestSettingsSaveChoiceAndKey(t *testing.T) {
@@ -389,8 +404,8 @@ func TestSettingsSaveChoiceAndKey(t *testing.T) {
 	if w := post("/_/settings/ai", url.Values{"provider": {"anthropic"}, "api_model": {"claude-haiku-5-5"}}); w.Code != http.StatusSeeOther {
 		t.Fatalf("save choice: %d %s", w.Code, w.Body)
 	}
-	if s.cfg.AI.Provider != "anthropic" || s.cfg.AI.Model != "claude-haiku-5-5" || !s.cfg.AI.Enabled {
-		t.Errorf("config not updated: %+v", s.cfg.AI)
+	if cur := s.aiSettings(); cur.Provider != "anthropic" || cur.Model != "claude-haiku-5-5" || !cur.Enabled {
+		t.Errorf("settings not updated: %+v", cur)
 	}
 	if s.getRanker() == nil {
 		t.Error("ranker not reloaded")
@@ -414,10 +429,34 @@ func TestSettingsSaveChoiceAndKey(t *testing.T) {
 		t.Error("key not removed")
 	}
 	post("/_/settings/ai", url.Values{"provider": {"off"}})
-	if s.getRanker() != nil || s.cfg.AI.Enabled {
+	if s.getRanker() != nil || s.aiSettings().Enabled {
 		t.Error("turning AI off didn't take effect")
 	}
 	if w := post("/_/settings/ai", url.Values{"provider": {"evil"}}); w.Code != http.StatusBadRequest {
 		t.Errorf("unknown provider: %d", w.Code)
+	}
+}
+
+// Saving settings while pages render must be race-free (run with -race).
+func TestSettingsConcurrentWithRequests(t *testing.T) {
+	s, _ := newServer(t)
+	h := s.Handler()
+	var wg sync.WaitGroup
+	for i := 0; i < 20; i++ {
+		wg.Add(2)
+		provider := []string{"off", "claude-code", "anthropic"}[i%3]
+		go func() {
+			defer wg.Done()
+			do(h, "POST", "/_/settings/ai", strings.NewReader(url.Values{"provider": {provider}}.Encode()), func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			})
+		}()
+		go func() { defer wg.Done(); do(h, "GET", "/", nil, nil) }()
+	}
+	wg.Wait()
+	if w := do(h, "POST", "/_/settings/ai", strings.NewReader(""), func(r *http.Request) {
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}); w.Code != http.StatusBadRequest {
+		t.Errorf("empty choice should be rejected, got %d", w.Code)
 	}
 }

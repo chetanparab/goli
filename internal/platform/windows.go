@@ -20,6 +20,9 @@ const Name = "Windows"
 // it. Set listen: ":80" in config.yaml to reach goli from other devices.
 const DefaultListen = "127.0.0.1:80"
 
+// No ::1 line: a browser trying go over IPv6 would find nothing on [::1]:80.
+var hostsLines = []string{"127.0.0.1\tgo"}
+
 // HostsPath is the system hosts file.
 func HostsPath() string {
 	root := os.Getenv("SystemRoot")
@@ -118,7 +121,7 @@ func InstallService(bin string, env map[string]string) error {
 	if err := os.MkdirAll(StateDir(), 0o700); err != nil {
 		return err
 	}
-	cmdline := strconv.Quote(bin) + " " + strings.Join(quoteAll(serveArgs()), " ")
+	cmdline := syscall.EscapeArg(bin) + " " + strings.Join(escapeAll(serveArgs()), " ")
 	if out, err := exec.Command("reg", "add", runKey, "/v", "goli", "/t", "REG_SZ", "/d", cmdline, "/f").CombinedOutput(); err != nil {
 		return fmt.Errorf("reg add: %w: %s", err, out)
 	}
@@ -148,26 +151,34 @@ func RestartService() error {
 }
 
 // WritePID records the background server's process ID so it can be stopped.
-func WritePID() { _ = os.WriteFile(pidPath(), []byte(strconv.Itoa(os.Getpid())), 0o600) }
+// The returned func removes the file again when the server exits cleanly.
+func WritePID() (remove func()) {
+	_ = os.WriteFile(pidPath(), []byte(strconv.Itoa(os.Getpid())), 0o600)
+	return func() { _ = os.Remove(pidPath()) }
+}
 
 func stop() {
 	data, err := os.ReadFile(pidPath())
 	if err != nil {
 		return
 	}
-	if pid, err := strconv.Atoi(strings.TrimSpace(string(data))); err == nil {
-		_ = exec.Command("taskkill", "/PID", strconv.Itoa(pid), "/F").Run()
+	if pid, err := strconv.Atoi(strings.TrimSpace(string(data))); err == nil && pid > 0 {
+		// A stale pid file (after a crash or reboot) may name an unrelated
+		// process that reused the number: only kill it if it's goli.
+		image := "goli.exe"
+		if bin, err := os.Executable(); err == nil {
+			image = filepath.Base(bin)
+		}
+		_ = exec.Command("taskkill", "/F", "/FI", "PID eq "+strconv.Itoa(pid), "/FI", "IMAGENAME eq "+image).Run()
 	}
 	_ = os.Remove(pidPath())
 }
 
-func quoteAll(args []string) []string {
+// escapeAll quotes args the way Windows programs parse their command line.
+func escapeAll(args []string) []string {
 	out := make([]string, len(args))
 	for i, a := range args {
-		if strings.ContainsAny(a, ` "`) {
-			a = strconv.Quote(a)
-		}
-		out[i] = a
+		out[i] = syscall.EscapeArg(a)
 	}
 	return out
 }

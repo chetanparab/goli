@@ -26,10 +26,11 @@ type Option struct {
 // KeySource reports where an API key would come from, or "" if there is none.
 func KeySource(keys secret.Store) string {
 	if _, err := keys.Get(APIKeyName); err == nil {
-		return "saved in " + keys.Where()
+		return "saved in " + keys.Where(APIKeyName)
 	}
 	if os.Getenv("ANTHROPIC_API_KEY") != "" {
-		return "from the ANTHROPIC_API_KEY environment variable"
+		// Only this shell has it; the background server started at login doesn't.
+		return "from ANTHROPIC_API_KEY in this shell only — run `goli ai key` so the background server can use it"
 	}
 	if home, err := os.UserHomeDir(); err == nil {
 		if entries, err := os.ReadDir(filepath.Join(home, ".config", "anthropic", "credentials")); err == nil && len(entries) > 0 {
