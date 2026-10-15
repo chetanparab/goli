@@ -231,7 +231,7 @@ make lint     # go vet + golangci-lint
 make run      # build and serve in the foreground
 ```
 
-The project website lives in [`site/`](site) (plain HTML/CSS, no build step) and deploys to Cloudflare (Workers static assets, see `wrangler.jsonc`) from `.github/workflows/site.yml`. Check it with `node tools/check-site.mjs site`; `tools/stamp-site.sh` version-stamps the CSS/JS links before a deploy.
+The project website lives in [`site/`](site) (plain HTML/CSS, no build step) and CI checks it on every change (`node tools/check-site.mjs site`). CI never deploys it: the maintainer publishes goli.theanalogyarchitect.com from their own machine (`tools/stamp-site.sh`, then `wrangler deploy` with `wrangler.jsonc`), so no hosting credentials live in this repository. Forks don't need any of that to build or use goli.
 
 ## License
 

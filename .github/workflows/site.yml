@@ -1,28 +1,21 @@
-name: Deploy site
+name: Site check
 
-# Publishes site/ as static assets on Cloudflare Workers (worker "goli", see
-# wrangler.jsonc), served at https://goli.theanalogyarchitect.com.
+# Checks site/ (the project homepage) on every change. It never deploys and
+# needs no secrets: the homepage is published by the maintainer from their own
+# machine, so no Cloudflare credentials live in this public repository.
 on:
   push:
     branches: [main]
-    paths: ["site/**", "tools/**", "wrangler.jsonc", ".github/workflows/site.yml"]
-  workflow_dispatch:
-
-concurrency:
-  group: deploy-site
-  cancel-in-progress: true
+    paths: ["site/**", "tools/**", ".github/workflows/site.yml"]
+  pull_request:
+    paths: ["site/**", "tools/**", ".github/workflows/site.yml"]
 
 permissions:
   contents: read
 
 jobs:
-  deploy:
+  check:
     runs-on: ubuntu-latest
-    env:
-      # Until the Cloudflare secrets are added, the job still checks the site and
-      # says so instead of failing: red should mean "broken", not "not set up yet".
-      WRANGLER_SEND_METRICS: "false"   # no telemetry from CI
-      HAS_CLOUDFLARE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -30,21 +23,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
-      - name: Version-stamp CSS/JS so browsers fetch the new ones
+      - name: Version-stamp CSS/JS (as a deploy would)
         run: tools/stamp-site.sh
       - name: Check the site (local links, no inline code)
         run: node tools/check-site.mjs site
-      # Wrangler and every dependency are pinned by a lockfile with integrity hashes,
-      # because this is the step that holds the Cloudflare token.
-      - name: Install Wrangler from the lockfile
-        run: npm ci --prefix tools/deploy --no-audit --no-fund
-      - name: Deploy site/ to Cloudflare
-        if: env.HAS_CLOUDFLARE == 'true'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: tools/deploy/node_modules/.bin/wrangler deploy
-      - name: No Cloudflare credentials yet
-        if: env.HAS_CLOUDFLARE != 'true'
-        run: >-
-          echo "::notice title=Deploy skipped::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID as Actions secrets to publish. The token needs Account › Workers Scripts: Edit, plus Zone › Workers Routes: Edit and Zone › Zone: Read for the zone serving the custom domain."
