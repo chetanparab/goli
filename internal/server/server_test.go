@@ -22,6 +22,7 @@ func newServer(t *testing.T) (*Server, *links.Store) {
 	t.Helper()
 	dir := t.TempDir()
 	t.Setenv("GOLI_HOME", dir)
+	t.Setenv("GOLI_SECRET_BACKEND", "file")
 	path := filepath.Join(dir, "links.yaml")
 	os.WriteFile(path, []byte("claude: https://claude.ai\nroadmap:\n  url: https://docs.example.com/roadmap\n  desc: Product roadmap\n"), 0o644)
 	cfg, err := config.Load()
@@ -352,5 +353,71 @@ func TestUIParamsAreNotSearches(t *testing.T) {
 		if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "links</strong>") {
 			t.Errorf("%s: expected the home page, got %d", target, w.Code)
 		}
+	}
+}
+
+func TestSettingsLocalOnly(t *testing.T) {
+	s, _ := newServer(t)
+	s.cfg.Allow = []string{"tailscale"}
+	s.cfg.AllowWrite = true
+	h := s.Handler()
+	if w := do(h, "GET", "/_/settings", nil, nil); w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "Claude API key") {
+		t.Fatalf("local settings page: %d", w.Code)
+	}
+	// Even a phone that may edit links can't see or change AI settings or keys.
+	if w := do(h, "GET", "/_/settings", nil, viaTailnet("100.101.102.103:5000", "go")); w.Code != http.StatusForbidden {
+		t.Errorf("tailnet settings page: %d", w.Code)
+	}
+	form := url.Values{"key": {"sk-ant-api03-test_KEY-123456"}}.Encode()
+	w := do(h, "POST", "/_/settings/key", strings.NewReader(form), func(r *http.Request) {
+		viaTailnet("100.101.102.103:5000", "go")(r)
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	})
+	if w.Code != http.StatusForbidden {
+		t.Errorf("tailnet key save: %d", w.Code)
+	}
+}
+
+func TestSettingsSaveChoiceAndKey(t *testing.T) {
+	s, _ := newServer(t)
+	h := s.Handler()
+	post := func(path string, v url.Values) *httptest.ResponseRecorder {
+		return do(h, "POST", path, strings.NewReader(v.Encode()), func(r *http.Request) {
+			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		})
+	}
+	if w := post("/_/settings/ai", url.Values{"provider": {"anthropic"}, "api_model": {"claude-haiku-5-5"}}); w.Code != http.StatusSeeOther {
+		t.Fatalf("save choice: %d %s", w.Code, w.Body)
+	}
+	if s.cfg.AI.Provider != "anthropic" || s.cfg.AI.Model != "claude-haiku-5-5" || !s.cfg.AI.Enabled {
+		t.Errorf("config not updated: %+v", s.cfg.AI)
+	}
+	if s.getRanker() == nil {
+		t.Error("ranker not reloaded")
+	}
+	if w := post("/_/settings/key", url.Values{"key": {"not-a-key"}}); !strings.Contains(w.Body.String(), "start with sk-ant-") {
+		t.Error("bad key accepted")
+	}
+	if w := post("/_/settings/key", url.Values{"key": {"sk-ant-api03-test_KEY-123456"}}); w.Code != http.StatusSeeOther {
+		t.Fatalf("save key: %d", w.Code)
+	}
+	if v, err := s.keys.Get("anthropic-api-key"); err != nil || v != "sk-ant-api03-test_KEY-123456" {
+		t.Errorf("key not stored: %q %v", v, err)
+	}
+	if body := do(h, "GET", "/_/settings", nil, nil).Body.String(); strings.Contains(body, "sk-ant-api03-test") {
+		t.Error("settings page leaks the saved key")
+	}
+	if w := post("/_/settings/key", url.Values{"remove": {"1"}}); w.Code != http.StatusSeeOther {
+		t.Fatalf("remove key: %d", w.Code)
+	}
+	if _, err := s.keys.Get("anthropic-api-key"); err == nil {
+		t.Error("key not removed")
+	}
+	post("/_/settings/ai", url.Values{"provider": {"off"}})
+	if s.getRanker() != nil || s.cfg.AI.Enabled {
+		t.Error("turning AI off didn't take effect")
+	}
+	if w := post("/_/settings/ai", url.Values{"provider": {"evil"}}); w.Code != http.StatusBadRequest {
+		t.Errorf("unknown provider: %d", w.Code)
 	}
 }

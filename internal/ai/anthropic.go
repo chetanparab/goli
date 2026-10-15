@@ -23,13 +23,17 @@ type API struct {
 	sendURLs string
 }
 
-// NewAPI returns an API ranker. Credentials come from ANTHROPIC_API_KEY or an
-// `ant auth login` profile, resolved by the SDK.
-func NewAPI(model string) *API {
+// NewAPI returns an API ranker. With key empty, credentials come from
+// ANTHROPIC_API_KEY or an `ant auth login` profile, resolved by the SDK.
+func NewAPI(model, key string) *API {
 	if model == "" {
 		model = DefaultAPIModel
 	}
-	return &API{client: anthropic.NewClient(option.WithMaxRetries(1)), model: model}
+	opts := []option.RequestOption{option.WithMaxRetries(1)}
+	if key != "" {
+		opts = append(opts, option.WithAPIKey(key))
+	}
+	return &API{client: anthropic.NewClient(opts...), model: model}
 }
 
 // Rank returns Claude's picks for query, filtered to keys that exist.

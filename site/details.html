@@ -122,14 +122,16 @@ dashboard:                                             <span class="c"># context
     <section class="section" id="ai" aria-labelledby="ai-h">
       <div class="section-head"><span class="num">iv.</span><h2 class="title" id="ai-h">AI search &amp; <em>privacy</em></h2></div>
       <div class="body">
-        <p>AI search is <strong>off until you turn it on</strong>. Without it, goli's local fuzzy search already handles typos and keywords, and nothing leaves your machine.</p>
-        <p>Turn it on and <code>go/?q3 sales dashboard</code> asks Claude which of your links you mean. Pick an engine:</p>
+        <p>AI search lets <code>go/?q3 sales</code> find a link by what it's about. It's <strong>off until you choose otherwise</strong> — and even off, goli's built-in search forgives typos and matches descriptions, with nothing leaving your computer.</p>
+        <p>Pick how it's powered with <code>goli ai setup</code>, or on goli's own settings page at <code>http://go/_/settings</code> (only on the computer running goli):</p>
         <table>
-          <tr><th>Engine</th><th>Uses</th></tr>
-          <tr><td><code>claude-code</code></td><td>The Claude Code CLI you're already signed in to — your Claude subscription, no API key. goli runs it with no tools, no plugins and no saved history.</td></tr>
-          <tr><td><code>anthropic</code></td><td>The Claude API, billed per request.</td></tr>
+          <tr><th>Option</th><th>Uses</th><th>You need</th></tr>
+          <tr><td>Off</td><td>goli's built-in search</td><td>Nothing</td></tr>
+          <tr><td>Claude Code</td><td>Your Claude Code login — your Claude subscription</td><td>Claude Code, signed in</td></tr>
+          <tr><td>Claude API key</td><td>The Claude API, a fraction of a cent per search (free credits count)</td><td>A key from console.anthropic.com</td></tr>
         </table>
-        <p><strong>Exactly what is sent, and only when you search:</strong> your query, plus each link's name, description, tags and <em>host name</em> (say, <code>docs.google.com</code> — not the full address). Send full URLs or none with <code>send_urls</code>. Opening a link never calls AI, and if another website tries to trigger a search behind your back, goli quietly falls back to local search.</p>
+        <p><strong>Everyone uses their own account.</strong> goli never ships anyone's login or key. A pasted key goes into your macOS Keychain or Linux keyring (or a private file elsewhere) — never into config files or logs. A built-in test checks it works using three made-up links, so your own links aren't sent.</p>
+        <p><strong>Exactly what is sent, and only when you search:</strong> your query, plus each link's name, description, tags and <em>host name</em> (say, <code>docs.google.com</code> — not the full address). Opening a link never calls AI, and if another website tries to trigger a search behind your back, goli quietly falls back to local search.</p>
       </div>
     </section>
     <section class="section" id="phone" aria-labelledby="phone-h">

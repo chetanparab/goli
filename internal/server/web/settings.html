@@ -1,0 +1,60 @@
+{{template "head" "AI search"}}
+<h1>AI search</h1>
+<p class="muted" style="margin:-4px 0 20px">Lets <code>go/?words</code> find a link by what it's about, not just its name. Pick how it's powered — you can change this any time.</p>
+
+{{with .Notice}}<div class="notice{{if not .OK}} warn{{end}}" role="status">{{.Text}}</div>{{end}}
+
+<form method="post" action="/_/settings/ai">
+  {{range .Options}}
+  <label class="opt{{if .Active}} active{{end}}">
+    <input type="radio" name="provider" value="{{.ID}}"{{if .Active}} checked{{end}}>
+    <span class="opt-body">
+      <span class="opt-head"><strong>{{.Name}}</strong>
+        {{if .Active}}<span class="pill on">In use</span>{{end}}
+        {{if .Ready}}<span class="pill ok">Ready</span>{{else}}<span class="pill todo">Needs setup</span>{{end}}
+      </span>
+      <span class="opt-blurb">{{.Blurb}}</span>
+      <span class="opt-detail">{{.Detail}}</span>
+      {{if eq .ID "claude-code"}}
+      <span class="opt-model">Model
+        <select name="cc_model" aria-label="Claude Code model">
+          {{range $.ClaudeCodeModels}}<option value="{{.ID}}"{{if and (eq $.Active "claude-code") (eq $.Model .ID)}} selected{{end}}>{{.Name}} — {{.Note}}</option>{{end}}
+        </select></span>
+      {{end}}
+      {{if eq .ID "anthropic"}}
+      <span class="opt-model">Model
+        <select name="api_model" aria-label="Claude API model">
+          {{range $.APIModels}}<option value="{{.ID}}"{{if eq $.Active "anthropic"}}{{if eq $.Model .ID}} selected{{else if and (eq $.Model "") (eq .ID $.DefaultAPIModel)}} selected{{end}}{{end}}>{{.Name}} — {{.Note}}</option>{{end}}
+        </select></span>
+      {{end}}
+    </span>
+  </label>
+  {{end}}
+  <div class="row-actions"><button type="submit">Save choice</button></div>
+</form>
+
+<div class="card" id="key">
+  <strong>Claude API key</strong>
+  {{if .HasSavedKey}}
+  <p class="muted">A key is saved in {{.KeyWhere}}. It's never written to config.yaml or the logs.</p>
+  <form method="post" action="/_/settings/key" data-confirm="Remove the saved API key?">
+    <input type="hidden" name="remove" value="1"><button class="ghost" type="submit">Remove saved key</button>
+  </form>
+  {{else}}
+  <p class="muted">Create a key at <a href="https://console.anthropic.com/settings/keys" rel="noopener">console.anthropic.com → API keys</a>, then paste it below. goli keeps it in {{.KeyWhere}} — never in config.yaml or the logs.</p>
+  {{end}}
+  <form method="post" action="/_/settings/key" class="keyform">
+    <input type="password" name="key" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" aria-label="Anthropic API key" required>
+    <button type="submit">{{if .HasSavedKey}}Replace key{{else}}Save key{{end}}</button>
+  </form>
+</div>
+
+<div class="card">
+  <strong>Test it</strong>
+  <p class="muted">Runs one search against three made-up links — your own links aren't sent.</p>
+  <form method="post" action="/_/settings/test"><button type="submit" class="ghost-strong">Test AI search</button></form>
+</div>
+
+<p class="muted small">What leaves your computer when AI search is on: your query, plus each link's name, description, tags and {{if eq .SendURLs "full"}}full address{{else if eq .SendURLs "none"}}no address{{else}}host name only (e.g. docs.example.com){{end}}. Opening links never uses AI. Each person who uses goli connects their own Claude account or key.</p>
+<p><a href="/">← Back to your links</a></p>
+{{template "foot"}}

@@ -19,7 +19,17 @@ const csp = "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; i
 
 type ctxKey int
 
-const writeKey ctxKey = 0
+const (
+	writeKey ctxKey = iota
+	localKey
+)
+
+// isLocal reports whether the request came from this machine itself. Settings
+// (which AI to use, API keys) can only be viewed and changed locally.
+func isLocal(r *http.Request) bool {
+	ok, _ := r.Context().Value(localKey).(bool)
+	return ok
+}
 
 // canWrite reports whether the guard granted this request write access.
 func canWrite(r *http.Request) bool {
@@ -70,7 +80,9 @@ func (s *Server) guard(next http.Handler) http.Handler {
 			http.Error(w, "read-only: set allow_write: true to edit links from other devices", http.StatusForbidden)
 			return
 		}
-		inner.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), writeKey, write)))
+		ctx := context.WithValue(r.Context(), writeKey, write)
+		ctx = context.WithValue(ctx, localKey, remote != nil && remote.IsLoopback())
+		inner.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

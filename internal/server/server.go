@@ -21,6 +21,7 @@ import (
 	"github.com/chetanparab/goli/internal/ctxinfo"
 	"github.com/chetanparab/goli/internal/links"
 	"github.com/chetanparab/goli/internal/match"
+	"github.com/chetanparab/goli/internal/secret"
 )
 
 //go:embed web/*.html web/*.png web/icon.svg web/*.js web/manifest.webmanifest web/fonts/*.woff2
@@ -56,9 +57,12 @@ const (
 type Server struct {
 	cfg      *config.Config
 	store    *links.Store
-	ranker   ai.Ranker // nil when AI is disabled
 	detector *ctxinfo.Detector
 	log      *slog.Logger
+	keys     secret.Store
+
+	aiMu   sync.RWMutex
+	ranker ai.Ranker // nil when AI search is off
 
 	aiSem   chan struct{}
 	cacheMu sync.Mutex
@@ -74,14 +78,32 @@ type cachedPicks struct {
 func New(cfg *config.Config, store *links.Store, log *slog.Logger) *Server {
 	s := &Server{
 		cfg: cfg, store: store, detector: ctxinfo.NewDetector(cfg.Networks), log: log,
+		keys:  cfg.Keys(),
 		aiSem: make(chan struct{}, aiConcurrency), cache: map[string]cachedPicks{},
 	}
-	r, err := ai.New(cfg.AI)
-	if err != nil {
-		log.Error("AI search disabled", "err", err)
-	}
-	s.ranker = r
+	s.reloadAI()
 	return s
+}
+
+// reloadAI rebuilds the AI ranker from the current settings, so a change in
+// the settings page takes effect without a restart.
+func (s *Server) reloadAI() {
+	r, err := ai.New(s.cfg.AI, s.keys)
+	if err != nil {
+		s.log.Error("AI search disabled", "err", err)
+	}
+	s.aiMu.Lock()
+	s.ranker = r
+	s.aiMu.Unlock()
+	s.cacheMu.Lock()
+	clear(s.cache)
+	s.cacheMu.Unlock()
+}
+
+func (s *Server) getRanker() ai.Ranker {
+	s.aiMu.RLock()
+	defer s.aiMu.RUnlock()
+	return s.ranker
 }
 
 // Handler returns the HTTP handler with security middleware applied.
@@ -96,6 +118,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("DELETE /_/api/links/{key...}", s.apiDelete)
 	mux.HandleFunc("POST /_/links", s.formPut)
 	mux.HandleFunc("POST /_/links/delete", s.formDelete)
+	mux.HandleFunc("GET /_/settings", s.localOnly(s.settingsPage))
+	mux.HandleFunc("POST /_/settings/ai", s.localOnly(s.settingsAI))
+	mux.HandleFunc("POST /_/settings/key", s.localOnly(s.settingsKey))
+	mux.HandleFunc("POST /_/settings/test", s.localOnly(s.settingsTest))
 	mux.HandleFunc("GET /{path...}", s.handleGo)
 	return s.guard(mux)
 }
@@ -155,7 +181,8 @@ func (s *Server) handleGo(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		s.render(w, http.StatusOK, "home.html", map[string]any{
-			"Links": s.store.All(), "AI": s.ranker != nil, "CanWrite": canWrite(r), "Form": form,
+			"Links": s.store.All(), "AI": s.getRanker() != nil, "AIName": providerName(ai.Active(s.cfg.AI)),
+			"Local": isLocal(r), "CanWrite": canWrite(r), "Form": form,
 		})
 		return
 	}
@@ -280,7 +307,7 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request, q string, lucky 
 	var results []searchResult
 	var aiErr string
 	usedAI := false
-	if s.ranker != nil && q != "" && userInitiated(r) {
+	if s.getRanker() != nil && q != "" && userInitiated(r) {
 		picks, err := s.rankAI(r.Context(), q, all)
 		if err != nil {
 			s.log.Warn("ai search failed, using fuzzy match", "err", err)
@@ -307,7 +334,7 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request, q string, lucky 
 		}
 	}
 	s.render(w, http.StatusOK, "search.html", map[string]any{
-		"Query": q, "Results": results, "UsedAI": usedAI, "AIError": aiErr, "AI": s.ranker != nil,
+		"Query": q, "Results": results, "UsedAI": usedAI, "AIError": aiErr, "AI": s.getRanker() != nil,
 	})
 }
 
@@ -345,7 +372,11 @@ func (s *Server) rankAI(ctx context.Context, q string, all []*links.Link) ([]ai.
 	}
 	ctx, cancel := context.WithTimeout(ctx, aiTimeout)
 	defer cancel()
-	picks, err := s.ranker.Rank(ctx, q, all)
+	r := s.getRanker()
+	if r == nil {
+		return nil, errors.New("AI search is off")
+	}
+	picks, err := r.Rank(ctx, q, all)
 	if err != nil {
 		return nil, err
 	}

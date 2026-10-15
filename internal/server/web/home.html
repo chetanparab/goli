@@ -1,5 +1,6 @@
 {{template "head" "Home"}}
 {{template "searchbox" ""}}
+{{if .Local}}<p class="ai-line"><span>AI search: <strong>{{.AIName}}</strong></span><a href="/_/settings">{{if .AI}}Change{{else}}Turn on AI search{{end}} →</a></p>{{end}}
 
 {{if .CanWrite}}<details class="card"{{if .Form.Editing}} open{{end}}>
   <summary><strong>{{if .Form.Editing}}Edit go/{{.Form.Key}}{{else}}+ New link{{end}}</strong></summary>

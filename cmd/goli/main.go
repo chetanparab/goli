@@ -64,6 +64,7 @@ Usage:
   goli install | uninstall       start/stop the server at login (macOS, Linux, Windows)
   goli restart                   restart the background server (after an upgrade)
   goli hosts [-apply]            print or add the hosts-file entry for go/ (apply needs admin rights)
+  goli ai [setup|use|key|test]   choose how AI search is powered (see goli ai help)
   goli doctor                    check that everything is wired up
   goli version
 
@@ -141,6 +142,8 @@ func run(args []string) error {
 		}
 		fmt.Println("goli server restarted")
 		return nil
+	case "ai":
+		return cmdAI(cfg, rest)
 	case "doctor":
 		return cmdDoctor(cfg, store)
 	case "open":
@@ -161,7 +164,7 @@ var subcommands = map[string]bool{
 	"help": true, "version": true, "hosts": true, "serve": true, "add": true, "rm": true,
 	"delete": true, "ls": true, "list": true, "find": true, "search": true, "edit": true,
 	"check": true, "ctx": true, "install": true, "uninstall": true, "doctor": true, "open": true,
-	"restart": true,
+	"restart": true, "ai": true,
 }
 
 func cmdServe(cfg *config.Config, store *links.Store, args []string) error {
@@ -304,7 +307,7 @@ func cmdFind(cfg *config.Config, store *links.Store, args []string) error {
 		return errors.New("usage: goli find <words...>")
 	}
 	all := store.All()
-	ranker, err := ai.New(cfg.AI)
+	ranker, err := ai.New(cfg.AI, cfg.Keys())
 	if err != nil {
 		return err
 	}
@@ -504,24 +507,15 @@ func cmdDoctor(cfg *config.Config, store *links.Store) error {
 			"install Tailscale (tailscale.com/download), sign in, then rename this machine to \"go\" in the admin console")
 	}
 
-	switch {
-	case !cfg.AI.Enabled:
-		fmt.Println("· AI search disabled in config.yaml")
-	case cfg.AI.Provider == ai.ProviderAnthropic:
-		home, _ := os.UserHomeDir()
-		_, profErr := os.Stat(filepath.Join(home, ".config", "anthropic", "credentials"))
-		ok(os.Getenv("ANTHROPIC_API_KEY") != "" || profErr == nil, "Claude API credentials for AI search",
-			"run `ant auth login`, or export ANTHROPIC_API_KEY")
-	default:
-		cc := ai.NewClaudeCode(cfg.AI.ClaudeBin, cfg.AI.Model)
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		in, err := cc.LoggedIn(ctx)
-		cancel()
-		msg := "claude CLI signed in for AI search"
-		if err != nil {
-			msg += " (" + err.Error() + ")"
+	active := ai.Active(cfg.AI)
+	if active == ai.ProviderOff {
+		fmt.Println("· AI search is off (turn it on with `goli ai setup`)")
+		return nil
+	}
+	for _, o := range ai.Options(context.Background(), cfg.AI, cfg.Keys()) {
+		if o.Active {
+			ok(o.Ready, "AI search: "+o.Name+" — "+o.Detail, "goli ai setup")
 		}
-		ok(in, msg, "run `claude auth login` in a terminal")
 	}
 	return nil
 }

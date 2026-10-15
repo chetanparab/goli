@@ -176,16 +176,25 @@ networks:
 
 ### AI search
 
-AI search is off until you set `ai.enabled: true`. Then `go/?words` and `goli find` ask Claude which link you mean. Choose an engine with `ai.provider`:
+`go/?words` can find a link by what it's *about*. Choose how it's powered with **`goli ai setup`** (a guided terminal setup) or on goli's own settings page, **http://go/_/settings** (only on the computer running goli; other devices can't open it):
 
-| Provider | Uses | Setup |
+| Option | Uses | You need |
 |---|---|---|
-| `claude-code` (default) | The local [Claude Code](https://claude.com/claude-code) CLI and its login, i.e. your Claude subscription. No API key. | `claude auth login` once |
-| `anthropic` | The Claude API, billed per request | `ant auth login` or `ANTHROPIC_API_KEY` |
+| **Off** (default) | goli's built-in search: forgives typos, matches descriptions | nothing; nothing leaves your computer |
+| **Claude Code** | your Claude Code login, i.e. your Claude subscription | [Claude Code](https://claude.com/claude-code) installed and `claude auth login` |
+| **Claude API key** | the Claude API, billed per search (a fraction of a cent; free credits count) | a key from [console.anthropic.com](https://console.anthropic.com/settings/keys) |
 
-What is sent, and only when you search: your query and the link catalog — keys, descriptions, tags, and each URL's host name only (`send_urls: host`, the default; `full` sends whole URLs, `none` sends none). Redirects never call AI, and searches triggered by other websites (for example a hidden `<img src="http://go/?…">`) fall back to local fuzzy matching instead of spending AI calls. At most two AI searches run at once, and repeated queries are cached for 10 minutes. The `claude-code` engine runs the CLI with no tools, no MCP servers, no project settings and no saved session, so it can only read the catalog it's given.
+```bash
+goli ai                 # show the options and which is in use
+goli ai setup           # pick one, add a key if needed, run a test
+goli ai use api haiku   # or: off · claude-code · api [opus|sonnet|haiku]
+goli ai key             # save an API key (typed hidden)
+goli ai test            # one search on three made-up links
+```
 
-With AI off, everything stays on your machine; local fuzzy search still works, and it is also the automatic fallback whenever AI is unavailable.
+**Every user connects their own account.** goli never ships anyone's login or key. A pasted API key is stored in your macOS Keychain, your Linux keyring (via `secret-tool`), or otherwise a private `0600` file in goli's config folder; never in `config.yaml` or the logs. An `ANTHROPIC_API_KEY` environment variable or an `ant auth login` profile also works.
+
+What is sent, and only when you search: your query and the link catalog (keys, descriptions, tags, and each URL's host name only with `send_urls: host`, the default; `full` sends whole URLs, `none` sends none). Opening a link never calls AI, and searches triggered by other websites (for example a hidden `<img src="http://go/?…">`) fall back to local matching instead of spending AI calls. At most two AI searches run at once, and repeated queries are cached for 10 minutes. The Claude Code option runs the CLI with no tools, no MCP servers, no project settings and no saved session, so it can only read the catalog it's given.
 
 ## Integrations
 

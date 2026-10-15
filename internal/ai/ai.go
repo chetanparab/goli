@@ -14,6 +14,7 @@ import (
 
 	"github.com/chetanparab/goli/internal/config"
 	"github.com/chetanparab/goli/internal/links"
+	"github.com/chetanparab/goli/internal/secret"
 )
 
 // Pick is one link the model chose for the query.
@@ -30,13 +31,63 @@ type Ranker interface {
 
 // Provider names accepted in config.yaml.
 const (
+	ProviderOff        = "off"
 	ProviderClaudeCode = "claude-code"
 	ProviderAnthropic  = "anthropic"
 )
 
-// New returns the configured Ranker, or nil if AI search is disabled.
-func New(cfg config.AI) (Ranker, error) {
+// APIKeyName is the name the Anthropic API key is stored under (see package secret).
+const APIKeyName = "anthropic-api-key" // #nosec G101 -- the name a key is stored under, not a key
+
+// Model is a choice offered in `goli ai setup` and the settings page.
+type Model struct {
+	ID, Name, Note string
+}
+
+// APIModels are the Claude API models offered for search, best first.
+var APIModels = []Model{
+	{"claude-opus-5-5", "Opus 5.5", "best answers"},
+	{"claude-sonnet-5-5", "Sonnet 5.5", "fast, lower cost"},
+	{"claude-haiku-5-5", "Haiku 5.5", "fastest, lowest cost"},
+}
+
+// ClaudeCodeModels are the choices for the claude-code provider; "" uses
+// whatever model the user's Claude Code plan defaults to.
+var ClaudeCodeModels = []Model{
+	{"", "Your plan's default", "recommended"},
+	{"opus", "Opus", "best answers"},
+	{"sonnet", "Sonnet", "faster"},
+	{"haiku", "Haiku", "fastest"},
+}
+
+// NormalizeProvider maps friendly names onto the provider IDs.
+func NormalizeProvider(p string) string {
+	switch strings.ToLower(strings.TrimSpace(p)) {
+	case "", "off", "none", "disabled":
+		return ProviderOff
+	case "claude-code", "claudecode", "claude", "code":
+		return ProviderClaudeCode
+	case "anthropic", "api", "claude-api", "key":
+		return ProviderAnthropic
+	}
+	return p
+}
+
+// Active reports the provider in effect: "off" unless AI is enabled.
+func Active(cfg config.AI) string {
 	if !cfg.Enabled {
+		return ProviderOff
+	}
+	if cfg.Provider == "" {
+		return ProviderClaudeCode
+	}
+	return NormalizeProvider(cfg.Provider)
+}
+
+// New returns the configured Ranker, or nil if AI search is off. keys is
+// where a saved API key is looked up.
+func New(cfg config.AI, keys secret.Store) (Ranker, error) {
+	if Active(cfg) == ProviderOff {
 		return nil, nil
 	}
 	switch cfg.SendURLs {
@@ -44,13 +95,14 @@ func New(cfg config.AI) (Ranker, error) {
 	default:
 		return nil, fmt.Errorf("unknown ai.send_urls %q (use host, full or none)", cfg.SendURLs)
 	}
-	switch cfg.Provider {
-	case "", ProviderClaudeCode:
+	switch Active(cfg) {
+	case ProviderClaudeCode:
 		cc := NewClaudeCode(cfg.ClaudeBin, cfg.Model)
 		cc.sendURLs = cfg.SendURLs
 		return cc, nil
 	case ProviderAnthropic:
-		api := NewAPI(cfg.Model)
+		key, _ := keys.Get(APIKeyName) // empty: the SDK falls back to ANTHROPIC_API_KEY or an `ant` login
+		api := NewAPI(cfg.Model, key)
 		api.sendURLs = cfg.SendURLs
 		return api, nil
 	default:

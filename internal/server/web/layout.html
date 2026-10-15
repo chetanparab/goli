@@ -75,6 +75,28 @@ td.del{width:98px;text-align:right;white-space:nowrap}td.del form{display:inline
 .bar span{display:block;height:100%;background:var(--accent-fill);border-radius:2px}
 .notice{border-left:3px solid var(--ok);padding:6px 12px;margin-bottom:16px}
 .notice.warn{border-color:var(--warn)}
+.opt{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:border-color .2s}
+.opt:hover{border-color:var(--ink-faint)}
+.opt.active,.opt:has(input:checked){border-color:var(--accent-fill)}
+.opt input[type=radio]{margin-top:5px;accent-color:var(--accent-fill);width:16px;height:16px;padding:0}
+.opt-body{display:flex;flex-direction:column;gap:4px;min-width:0}
+.opt-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.opt-head strong{font:500 17px 'Fraunces',Georgia,serif}
+.opt-blurb{color:var(--ink-soft);font-size:14px}
+.opt-detail{color:var(--ink-faint);font-size:13px}
+.opt-model{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-faint);margin-top:6px}
+.opt-model select{font:inherit;font-size:13px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:5px 8px}
+.pill{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:2px 8px;border:1px solid var(--line);color:var(--ink-faint)}
+.pill.on{border-color:var(--accent-fill);color:var(--accent)}
+.pill.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
+.pill.todo{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+.row-actions{margin:6px 0 22px}
+.keyform{display:flex;gap:8px;margin-top:10px}
+.keyform input{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+button.ghost-strong{background:none;color:var(--ink);border-color:var(--ink-faint)}
+.small{font-size:13px}
+.ai-line{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:13.5px;color:var(--ink-soft);margin:-8px 0 18px}
+.ai-line a{font-weight:500}
 summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}
 footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-faint);display:flex;flex-wrap:wrap;gap:6px 14px}
 footer a{color:var(--ink-soft)}
