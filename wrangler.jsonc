@@ -1,5 +1,6 @@
 // The goli website (site/) on Cloudflare Workers static assets.
-// Deployed by .github/workflows/site.yml; served at goli.theanalogyarchitect.com.
+// Deployed by the maintainer from their machine (CI only checks site/);
+// served at goli.theanalogyarchitect.com.
 {
   "name": "goli",
   "compatibility_date": "2026-10-01",
@@ -10,5 +11,6 @@
   },
   "routes": [{ "pattern": "goli.theanalogyarchitect.com", "custom_domain": true }],
   "workers_dev": false, // served only on the custom domain
+  "preview_urls": false,
   "observability": { "enabled": false }
 }
