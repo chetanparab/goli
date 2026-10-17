@@ -260,8 +260,26 @@ go/pr → https://github.com/acme/app/pull/{1}
       </ol>
     </section>
 
+    <section class="section" id="history" aria-labelledby="s-hist">
+      <div class="section-head"><span class="num">vii.</span><h2 class="title" id="s-hist">Twenty years of <em>go/</em> — and the next step</h2></div>
+      <ol class="tl" id="tl">
+        <li><span class="when">2006 <span class="who">Google</span></span><h3>The first go/ links</h3>
+          <p>Google's SysOps team was tired of hand-making internal short URLs, so Eric DeFriez built a server that let any Googler name a link themselves; Benjamin Staffin was among the first to work on it. Type <code>go/payroll</code>, land there. Googlers still use it every day.</p></li>
+        <li><span class="when">2012 <span class="who">Yahoo</span></span><h3>The idea travels</h3>
+          <p>When Marissa Mayer moved from Google to Yahoo, a near-twin appeared there as <code>yo/</code> links. Soon most big tech companies — and plenty of banks — were running their own.</p></li>
+        <li><span class="when">2015 <span class="who">Open source</span></span><h3>Anyone with a server can have one</h3>
+          <p>Kelly Norton's <a href="https://github.com/kellegous/go" rel="noopener">kellegous/go</a> put a small go-links server on GitHub. Later, <a href="https://www.trot.to" rel="noopener">Trotto</a> open-sourced its own, and companies like <a href="https://www.golinks.io" rel="noopener">GoLinks</a> turned the idea into a product for teams.</p></li>
+        <li><span class="when">2022 <span class="who">Tailscale</span></span><h3>Private go links for a whole network</h3>
+          <p><a href="https://github.com/tailscale/golink" rel="noopener">tailscale/golink</a>: one binary, and every device on your tailnet can type <code>go/</code>. The best option today if you're a team on Tailscale.</p></li>
+        <li class="now"><span class="when">2026 <span class="who">goli · you are here</span></span><h3>Go links for <em>one person</em></h3>
+          <p>Every version so far needed a server, a team or a company. goli needs none of them: it runs on your own computer, your links live in a text file you own, and nothing is sent anywhere. Then it goes further than the originals — typos forgiven, search by meaning with your own AI, one name that opens different pages by context, and the same links on your phone and in your terminal. Free, MIT-licensed, on macOS, Windows and Linux.</p></li>
+        <li class="next"><span class="when">Next <span class="who">Roadmap</span></span><h3>Where it's going</h3>
+          <p>An MCP server so your AI agents can use and create your links. Search that reaches past the links file into Notion, Drive and GitHub. A browser extension for machines where you can't touch the hosts file. Reports on links you never use. <a href="https://github.com/chetanparab/goli/issues" rel="noopener">Help shape it</a> — goli is built in the open.</p></li>
+      </ol>
+    </section>
+
     <section class="section" aria-labelledby="s6">
-      <div class="section-head"><span class="num">vii.</span><h2 class="title" id="s6">How it <em>compares</em></h2></div>
+      <div class="section-head"><span class="num">viii.</span><h2 class="title" id="s6">How it <em>compares</em></h2></div>
       <div class="table-wrap">
         <table class="compare-table">
           <tr><th></th><th class="us">goli</th><th>tailscale/golink</th><th>Trotto</th><th>GoLinks</th></tr>
@@ -276,12 +294,12 @@ go/pr → https://github.com/acme/app/pull/{1}
     </section>
 
     <section class="section" aria-labelledby="s7">
-      <div class="section-head"><span class="num">viii.</span><h2 class="title" id="s7">Yours, <em>entirely</em></h2></div>
+      <div class="section-head"><span class="num">ix.</span><h2 class="title" id="s7">Yours, <em>entirely</em></h2></div>
       <p class="manifesto">Your links live in one file, on your computer. No sign-up, no sync service, no analytics — and AI stays off until you switch it on. <em>Just the shortest way back</em> to the pages that matter.</p>
     </section>
 
     <section class="section" id="start" aria-labelledby="s8">
-      <div class="section-head"><span class="num">ix.</span><h2 class="title" id="s8">Up in <em>a minute</em></h2></div>
+      <div class="section-head"><span class="num">x.</span><h2 class="title" id="s8">Up in <em>a minute</em></h2></div>
       <div class="body">
         <ol class="steps">
           <li><strong>Install goli.</strong> Unzip it and put <code>goli</code> on your <code>PATH</code> (on a Mac, first run <code>xattr -d com.apple.quarantine goli</code>, since the download isn't notarized yet). Download for <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_arm64.tar.gz">Mac (Apple silicon)</a>, <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_amd64.tar.gz">Mac (Intel)</a>, <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_windows_amd64.zip">Windows</a> or <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_linux_amd64.tar.gz">Linux</a> (<a href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">all downloads</a>) — or, with Go installed:

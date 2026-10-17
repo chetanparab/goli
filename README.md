@@ -215,6 +215,20 @@ What is sent, and only when you search: your query and the link catalog (keys, d
 
 Found a problem? See [SECURITY.md](SECURITY.md).
 
+## Where go links come from
+
+goli didn't invent go links; it brings a twenty-year-old idea to one person's computer.
+
+| When | Who | What happened |
+|---|---|---|
+| 2006 | Google | The SysOps team, tired of hand-making internal short URLs, built the first `go/` server so any employee could name a link. Eric DeFriez wrote the first version; Benjamin Staffin was among the earliest contributors. Googlers still use it. |
+| 2012 | Yahoo | A near-twin appeared as `yo/` links after Marissa Mayer moved from Google to Yahoo. Most large tech companies (and many banks) now run their own. |
+| 2015 | Open source | [kellegous/go](https://github.com/kellegous/go) put a small self-hosted server on GitHub. [Trotto](https://www.trot.to) later open-sourced its own; [GoLinks](https://www.golinks.io) sells it to companies. |
+| 2022 | Tailscale | [tailscale/golink](https://github.com/tailscale/golink): private go links for every device on a tailnet. The best choice for a team on Tailscale. |
+| 2026 | goli | Every version so far needed a server, a team or a company. goli needs none: it runs on your own computer, your links live in a text file you own, and it adds forgiving typos, search by meaning with your own AI, context-aware links, and your phone and terminal. |
+
+Sources: Trotto's [history of go links](https://www.trot.to/history-of-go-links), the [kellegous/go](https://github.com/kellegous/go) README and Tailscale's [golink announcement](https://tailscale.com/blog/golink).
+
 ## Roadmap
 
 - MCP server so AI agents can resolve and create links

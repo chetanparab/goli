@@ -264,3 +264,22 @@ if (term && !reduced) {
     }
   })();
 }
+
+// ── History timeline: each era fades in as it scrolls into view ──────────
+const tl = $("tl");
+if (tl && !reduced && "IntersectionObserver" in window) {
+  tl.classList.add("tl-anim");
+  const items = [...tl.children];
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      // Stagger siblings that arrive in the same batch, so the rail "draws" downwards.
+      const i = items.indexOf(e.target);
+      const batch = entries.filter((x) => x.isIntersecting).map((x) => items.indexOf(x.target)).sort((a, b) => a - b);
+      e.target.style.transitionDelay = `${batch.indexOf(i) * 120}ms`;
+      e.target.classList.add("in");
+      io.unobserve(e.target);
+    }
+  }, { threshold: 0.15, rootMargin: "0px 0px -8% 0px" });
+  items.forEach((li) => io.observe(li));
+}
