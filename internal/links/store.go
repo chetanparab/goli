@@ -25,6 +25,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/chetanparab/goli/internal/fslock"
 )
 
 // Variant is an alternative URL used when its conditions match the current context.
@@ -293,7 +295,7 @@ func (s *Store) edit(fn func(root *yaml.Node) error) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	// Serialise with other goli processes (CLI vs server) editing the same file.
-	unlock, err := lockFile(s.path + ".lock")
+	unlock, err := fslock.Lock(s.path + ".lock")
 	if err != nil {
 		return err
 	}

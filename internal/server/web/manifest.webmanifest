@@ -3,7 +3,8 @@
   "short_name": "go/",
   "description": "Your short links",
   "start_url": "/",
-  "display": "browser",
+  "display": "standalone",
+  "share_target": {"action": "/", "method": "GET", "params": {"title": "title", "text": "text", "url": "url"}},
   "background_color": "#0B0B0D",
   "theme_color": "#0B0B0D",
   "icons": [

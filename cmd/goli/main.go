@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -18,13 +19,14 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"runtime/debug"
 	"sort"
 	"strings"
 	"syscall"
 	"text/tabwriter"
 	"time"
+
+	"golang.org/x/term"
 
 	"github.com/chetanparab/goli/internal/ai"
 	"github.com/chetanparab/goli/internal/config"
@@ -33,6 +35,7 @@ import (
 	"github.com/chetanparab/goli/internal/match"
 	"github.com/chetanparab/goli/internal/platform"
 	"github.com/chetanparab/goli/internal/server"
+	gousage "github.com/chetanparab/goli/internal/usage"
 )
 
 // version is set at build time with -ldflags "-X main.version=...". Builds
@@ -56,7 +59,8 @@ Usage:
   goli find <words...>           search links (uses Claude when configured)
   goli add <key> <url> [flags]   create or update a link (-d desc, -t tags)
   goli rm <key>                  delete a link
-  goli ls [filter]               list links
+  goli ls [filter] [-unused]     list links (-unused: never opened, or not in 90 days)
+  goli import <bookmarks file>   turn a browser's bookmark export into links (-dry-run, -folder)
   goli edit                      open links.yaml in $EDITOR
   goli check [-local]            find dead links
   goli ctx [set k=v | unset k]   show or change context (for context-aware links)
@@ -121,10 +125,13 @@ func run(args []string) error {
 		if err := store.Delete(rest[0]); err != nil {
 			return err
 		}
-		fmt.Println("deleted go/" + links.NormalizeKey(rest[0]))
+		gousage.Open(cfg.Dir()).Forget(links.NormalizeKey(rest[0]))
+		fmt.Printf("deleted %s/%s\n", cfg.Name(), links.NormalizeKey(rest[0]))
 		return nil
 	case "ls", "list":
-		return cmdList(store, rest)
+		return cmdList(cfg, store, rest)
+	case "import":
+		return cmdImport(cfg, store, rest)
 	case "find", "search", "?":
 		return cmdFind(cfg, store, rest)
 	case "edit":
@@ -249,6 +256,7 @@ func cmdOpen(cfg *config.Config, store *links.Store, args []string) error {
 		return err
 	}
 	fmt.Println(res.URL)
+	gousage.Open(cfg.Dir()).Record(res.Link.Key)
 	return platform.OpenURL(res.URL)
 }
 
@@ -309,11 +317,35 @@ func splitList(s string) []string {
 	return out
 }
 
-func cmdList(store *links.Store, args []string) error {
-	filter := strings.ToLower(strings.Join(args, " "))
+func cmdList(cfg *config.Config, store *links.Store, args []string) error {
+	fs := flag.NewFlagSet("ls", flag.ContinueOnError)
+	unused := fs.Bool("unused", false, "only links never opened, or not opened in 90 days")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	filter := strings.ToLower(strings.Join(fs.Args(), " "))
+	keep := func(string) bool { return true }
+	if *unused {
+		var keys []string
+		for _, l := range store.All() {
+			keys = append(keys, l.Key)
+		}
+		cold, err := gousage.Open(cfg.Dir()).Unused(keys, time.Now().AddDate(0, 0, -90))
+		if err != nil {
+			return fmt.Errorf("%w: goli only starts counting opens from now on", err)
+		}
+		set := map[string]bool{}
+		for _, k := range cold {
+			set[k] = true
+		}
+		keep = func(k string) bool { return set[k] }
+	}
 	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	n := 0
 	for _, l := range store.All() {
+		if !keep(l.Key) {
+			continue
+		}
 		hay := strings.ToLower(l.Key + " " + strings.Join(l.Aliases, " ") + " " + l.URL + " " + l.Desc + " " + strings.Join(l.Tags, " "))
 		if filter != "" && !strings.Contains(hay, filter) {
 			continue
@@ -356,7 +388,7 @@ func cmdFind(cfg *config.Config, store *links.Store, args []string) error {
 		msg, _, _ := strings.Cut(err.Error(), "\n")
 		fmt.Fprintf(os.Stderr, "(AI search unavailable, using fuzzy match: %s)\n", msg)
 	}
-	res := match.Rank(q, all, 10)
+	res := match.RankBoosted(q, all, 10, gousage.Open(cfg.Dir()).Boost())
 	for _, r := range res {
 		fmt.Printf("%3d%%  %-20s %s\n", int(r.Score*100), r.Link.Key, r.Link.Desc)
 	}
@@ -453,21 +485,18 @@ func cmdInstall() error {
 		return err
 	}
 	fmt.Println("goli server installed; it starts at login. Logs:", platform.LogLocation())
-	return nil
+	return ensureHosts(config.LoadNames(), false)
 }
 
-func cmdHosts(args []string) error {
-	fs := flag.NewFlagSet("hosts", flag.ContinueOnError)
-	apply := fs.Bool("apply", false, "append the entries to the hosts file (needs admin rights)")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
+// ensureHosts makes sure every name has a hosts-file line. When something is
+// missing it prints the command and, in a terminal, offers to run that one
+// command with admin rights (the OS asks for the password, not goli).
+func ensureHosts(names []string, apply bool) error {
 	path := platform.HostsPath()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
-	names := config.LoadNames()
 	var missing []string
 	for _, l := range platform.HostsLines(names) {
 		if !platform.HostsHas(string(data), l) {
@@ -478,27 +507,42 @@ func cmdHosts(args []string) error {
 		fmt.Printf("the hosts file already maps %s → this machine\n", strings.Join(names, ", "))
 		return nil
 	}
-	if !*apply {
-		// Recommend a command that doesn't run goli itself with admin rights:
-		// the goli binary is usually user-writable.
-		fmt.Printf("Add %s to %s (needs admin rights):\n  %s\n", strings.Join(names, ", "), path, platform.HostsInstructions(missing))
+	if !apply {
+		fmt.Printf("\nFor %s/ to work, %s must point at this computer in %s.\n", names[0], strings.Join(names, ", "), path)
+		if term.IsTerminal(int(os.Stdin.Fd())) {
+			a := ask(bufio.NewReader(os.Stdin), "Add it now? Your system will ask for your password once [Y/n]", "y")
+			if strings.EqualFold(a, "y") || strings.EqualFold(a, "yes") {
+				if err := platform.AddHostsElevated(missing); err == nil {
+					fmt.Printf("done: %s now means this computer. Try %s/ in your browser.\n", strings.Join(names, ", "), names[0])
+					return nil
+				} else if err.Error() != "cancelled" {
+					fmt.Fprintln(os.Stderr, "goli:", err)
+				}
+			}
+		}
+		fmt.Printf("Run this yourself (needs admin rights):\n  %s\n", platform.HostsInstructions(missing))
 		return nil
 	}
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
 	if err != nil {
-		return fmt.Errorf("%w (run with admin rights)", err)
+		return err
 	}
 	defer f.Close()
-	nl := "\n"
-	if runtime.GOOS == "windows" {
-		nl = "\r\n"
-	}
-	if _, err := fmt.Fprintf(f, "%s# goli: go/ short links%s%s%s", nl, nl, strings.Join(missing, nl), nl); err != nil {
+	if _, err := fmt.Fprintf(f, "\n# goli: go/ short links\n%s\n", strings.Join(missing, "\n")); err != nil {
 		return err
 	}
 	platform.FlushDNS()
-	fmt.Println("added go to", path)
+	fmt.Printf("added %s to %s\n", strings.Join(names, ", "), path)
 	return nil
+}
+
+func cmdHosts(args []string) error {
+	fs := flag.NewFlagSet("hosts", flag.ContinueOnError)
+	apply := fs.Bool("apply", false, "append the entries to the hosts file (needs admin rights)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	return ensureHosts(config.LoadNames(), *apply)
 }
 
 func cmdDoctor(cfg *config.Config, store *links.Store) error {

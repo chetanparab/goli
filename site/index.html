@@ -71,7 +71,7 @@
           <a class="btn" id="dl-btn" href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">Download goli <span aria-hidden="true">↓</span></a>
           <a class="link" href="#start">Other ways to install</a>
         </div>
-        <p class="fine" id="dl-note">Free &amp; open source &nbsp;·&nbsp; macOS, Windows &amp; Linux &nbsp;·&nbsp; no account</p>
+        <p class="fine" id="dl-note">Free &amp; open source &nbsp;·&nbsp; macOS, Linux &amp; Windows (beta) &nbsp;·&nbsp; no account</p>
       </div>
 
       <div class="demo-col" aria-label="goli in a web browser">
@@ -350,9 +350,11 @@ go/scrum → same
       <div class="section-head"><span class="num">x.</span><h2 class="title" id="s8">Up in <em>a minute</em></h2></div>
       <div class="body">
         <ol class="steps">
-          <li><strong>Install goli.</strong> Unzip it and put <code>goli</code> on your <code>PATH</code> (on a Mac, first run <code>xattr -d com.apple.quarantine goli</code>, since the download isn't notarized yet). Download for <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_arm64.tar.gz">Mac (Apple silicon)</a>, <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_amd64.tar.gz">Mac (Intel)</a>, <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_windows_amd64.zip">Windows</a> or <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_linux_amd64.tar.gz">Linux</a> (<a href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">all downloads</a>) — or, with Go installed:
-            <pre data-copy><code><span class="p">$ </span>go install github.com/chetanparab/goli/cmd/goli@latest</code></pre></li>
-          <li><strong>Point <code>go/</code> at your computer.</strong> <code>goli hosts</code> prints the one command to run (Terminal on Mac and Linux, an Administrator PowerShell on Windows); <code>goli install</code> starts goli at login.
+          <li><strong>Install goli.</strong> On a Mac with Homebrew, or Windows with Scoop:
+            <pre data-copy><code><span class="p">$ </span>brew install chetanparab/tap/goli</code></pre>
+            <pre data-copy><code><span class="p">&gt; </span>scoop bucket add goli https://github.com/chetanparab/scoop-bucket; scoop install goli</code></pre>
+            Or <a href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">download a binary</a> for Mac, Windows or Linux and put <code>goli</code> on your <code>PATH</code> (on a Mac, run <code>xattr -d com.apple.quarantine goli</code> once — it isn't notarized yet). With Go installed: <code>go install github.com/chetanparab/goli/cmd/goli@latest</code>.</li>
+          <li><strong>Point <code>go/</code> at your computer.</strong> <code>goli hosts</code> asks for your password once (your system's own dialog — goli itself never runs as admin) and adds the line; <code>goli install</code> starts goli at login.
             <pre data-copy><code><span class="p">$ </span>goli hosts
 <span class="p">$ </span>goli install</code></pre></li>
           <li><strong>Add your first link</strong>, then type <code>go/standup</code> in your browser.

@@ -73,16 +73,17 @@
         <h3>macOS</h3>
         <ol class="steps">
           <li>Install goli (needs <a href="https://go.dev/dl/" rel="noopener">Go 1.26+</a>), or download a binary from the <a href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">latest release</a>.
-            <pre data-copy><code><span class="p">$ </span>go install github.com/chetanparab/goli/cmd/goli@latest</code></pre></li>
+            <pre data-copy><code><span class="p">$ </span>brew install chetanparab/tap/goli</code></pre>
+            or, with Go installed, <code>go install github.com/chetanparab/goli/cmd/goli@latest</code>.</li>
           <li>Downloaded the binary? Unzip it, move <code>goli</code> to a folder on your <code>PATH</code> (such as <code>~/.local/bin</code>) and, on a Mac, run <code>xattr -d com.apple.quarantine goli</code> once — the download isn't notarized yet.</li>
-          <li>Map <code>go</code> to this machine: <code>goli hosts</code> prints a single <code>sudo tee</code> command to run. goli never asks to run itself as root.</li>
+          <li>Map <code>go</code> to this machine: <code>goli hosts</code> offers to add the line, asking for your password once through the system's own dialog (or prints the <code>sudo tee</code> command to run yourself). Only that one small command is elevated — goli itself never runs as root.</li>
           <li>Start it at login with <code>goli install</code>, then check everything with <code>goli doctor</code>.</li>
           <li>Open <code>http://go/</code> once. After that, plain <code>go/standup</code> works in Chrome and Edge. In Firefox, set <code>browser.fixup.domainwhitelist.go</code> to <code>true</code> in <code>about:config</code> once.</li>
         </ol>
         <h3>Windows</h3>
         <ol class="steps">
-          <li>Download <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_windows_amd64.zip">goli for Windows</a> (or <code>go install</code> as above), unzip it and put <code>goli.exe</code> in a folder on your <code>PATH</code>.</li>
-          <li>Run <code>goli hosts</code>. It prints one PowerShell command — run it in PowerShell opened with <strong>Run as administrator</strong>.</li>
+          <li>With <a href="https://scoop.sh" rel="noopener">Scoop</a>: <code>scoop bucket add goli https://github.com/chetanparab/scoop-bucket; scoop install goli</code>. Or download <a href="https://github.com/chetanparab/goli/releases/latest/download/goli_windows_amd64.zip">goli for Windows</a>, unzip it and put <code>goli.exe</code> in a folder on your <code>PATH</code>.</li>
+          <li>Run <code>goli hosts</code>. It offers to add the hosts line through a UAC prompt, or prints the PowerShell command to run yourself as Administrator.</li>
           <li><code>goli install</code> starts goli now and at every sign-in, with no console window and no admin rights. Check with <code>goli doctor</code>.</li>
         </ol>
         <p class="note">On Windows goli listens on <code>127.0.0.1</code> by default, so Windows Firewall never asks. Settings live in <code>%AppData%\goli</code>.</p>
@@ -142,6 +143,7 @@ dashboard:                                             <span class="c"># context
         <p>Phones can't edit <code>/etc/hosts</code>, so goli uses <a href="https://tailscale.com" rel="noopener">Tailscale</a> — a free, private network between your own devices. Name your computer <code>go</code> in Tailscale, add <code>allow: [tailscale]</code> to goli's config, and your phone reaches <code>http://go/</code> from anywhere.</p>
         <p>On iPhone, Safari searches anything without a dot — so add <code>http://go/</code> to your Home Screen instead: tap the <strong>go/</strong> icon, type <code>standup</code>, done. On Android, open <code>http://go/</code> in Chrome, then ⋮ → <strong>Add to Home screen</strong>.</p>
         <h3>Managing links from your phone</h3>
+        <p>With goli on the Home Screen, any app's <strong>Share</strong> sheet can send a page to goli: it opens the new-link form with the address and title filled in.</p>
         <p>Add <code>allow_write: true</code> to goli's config and run <code>goli restart</code>. The Home Screen app then shows <strong>+ New link</strong>, every link gets <strong>edit</strong> and <strong>×</strong> buttons, and a name that doesn't exist yet can be created from its own page. Leave it off if anyone else shares your Tailscale network: by default other devices can open and search links, but not change them.</p>
       </div>
     </section>
@@ -174,7 +176,7 @@ dashboard:                                             <span class="c"># context
         <details><summary>Will it clash with my company's go/ links?</summary><p>No need for it to. <code>go</code> is only the default: set <code>names: [g]</code> (or <code>[my, go]</code> — any words you like) in <code>config.yaml</code>, run <code>goli hosts</code> again, and your links answer to <code>g/standup</code> while the company's <code>go/</code> stays untouched.</p></details>
         <details><summary>Can one link have several names?</summary><p>Yes. Give it <code>aliases: [daily, scrum]</code> in the links file, or <code>goli add standup &lt;url&gt; -a daily,scrum</code>, and all three names open it. Aliases count in search too.</p></details>
         <details><summary>Does it work while my computer sleeps?</summary><p>Your computer has to be awake to answer. <code>keep_awake: true</code> stops idle sleep while goli runs (on a Mac, while it's plugged in).</p></details>
-        <details><summary>Does it work on Windows?</summary><p>Yes — macOS, Windows and Linux, on Intel and ARM. Phones (iPhone and Android) connect through Tailscale.</p></details>
+        <details><summary>Does it work on Windows?</summary><p>Yes, in beta: it builds and passes its tests on Windows in CI, and we'd love to hear how a full install went for you. Otherwise — macOS, Windows and Linux, on Intel and ARM. Phones (iPhone and Android) connect through Tailscale.</p></details>
         <details><summary>Why “goli”?</summary><p>Go links → goli. And yes, the Hindi pun is intended: <em>goli dena</em> means giving someone the slip — goli gets you past long URLs.</p></details>
       </div>
     </section>

@@ -3,6 +3,8 @@
 package platform
 
 import (
+	"encoding/base64"
+	"encoding/binary"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"unicode/utf16"
 )
 
 // Name is a human name for this OS.
@@ -37,6 +40,30 @@ func HostsInstructions(lines []string) string {
 	body := strings.ReplaceAll(strings.Join(lines, "`r`n"), "\t", " ")
 	return `Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value "` + "`r`n# goli: go/ short links`r`n" + body + `"; ipconfig /flushdns` +
 		"\n  (run it in PowerShell opened with \"Run as administrator\")"
+}
+
+// AddHostsElevated appends lines to the hosts file through a UAC prompt:
+// a second PowerShell runs elevated with just the Add-Content command,
+// passed base64-encoded so no quoting can go wrong.
+func AddHostsElevated(lines []string) error {
+	body := strings.ReplaceAll(strings.Join(lines, "`r`n"), "\t", " ")
+	inner := `Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value "` + "`r`n# goli: go/ short links`r`n" + body + `"; ipconfig /flushdns`
+	enc := base64.StdEncoding.EncodeToString(utf16le(inner))
+	out, err := exec.Command("powershell", "-NoProfile", "-Command",
+		"Start-Process powershell -Verb RunAs -Wait -WindowStyle Hidden -ArgumentList '-NoProfile','-EncodedCommand','"+enc+"'").CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("couldn't edit the hosts file (UAC declined?): %s", strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+func utf16le(s string) []byte {
+	u := utf16.Encode([]rune(s))
+	b := make([]byte, 2*len(u))
+	for i, c := range u {
+		binary.LittleEndian.PutUint16(b[2*i:], c)
+	}
+	return b
 }
 
 // OpenURL opens u in the default browser.

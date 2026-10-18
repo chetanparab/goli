@@ -17,6 +17,7 @@ import (
 	"github.com/chetanparab/goli/internal/ai"
 	"github.com/chetanparab/goli/internal/config"
 	"github.com/chetanparab/goli/internal/links"
+	"github.com/chetanparab/goli/internal/match"
 )
 
 func newServer(t *testing.T) (*Server, *links.Store) {
@@ -489,5 +490,36 @@ func TestCustomNameAndAliases(t *testing.T) {
 	do(h, "POST", "/_/links", strings.NewReader(form), func(r *http.Request) { r.Header.Set("Content-Type", "application/x-www-form-urlencoded") })
 	if l, ok := store.Get("scrum"); !ok || l.Key != "standup" {
 		t.Errorf("alias saved from the form: %v %v", l, ok)
+	}
+}
+
+// A page shared from the phone's share sheet pre-fills the new-link form
+// and is never treated as a search; opening a link is counted locally.
+func TestShareTargetAndUsage(t *testing.T) {
+	s, store := newServer(t)
+	h := s.Handler()
+	w := do(h, "GET", "/?title=Weekly+report&url=https%3A%2F%2Fdocs.example.com%2Freport", nil, nil)
+	body := w.Body.String()
+	if w.Code != http.StatusOK || !strings.Contains(body, `value="https://docs.example.com/report"`) || !strings.Contains(body, `value="weekly-report"`) || !strings.Contains(body, `<details class="card" open>`) {
+		t.Fatalf("share prefill: %d\n%s", w.Code, body)
+	}
+	// Android puts the URL in "text".
+	if w := do(h, "GET", "/?text=Look+at+https%3A%2F%2Fdocs.example.com%2Fother", nil, nil); !strings.Contains(w.Body.String(), `value="https://docs.example.com/other"`) {
+		t.Error("share via text not prefilled")
+	}
+	for i := 0; i < 3; i++ {
+		do(h, "GET", "/roadmap", nil, nil)
+	}
+	if n := s.usage.All()["roadmap"].Count; n != 3 {
+		t.Errorf("roadmap opened 3 times, counted %d", n)
+	}
+	// Usage lifts an otherwise equal match.
+	store.Put(&links.Link{Key: "roadmaps-old", URL: "https://old.example.com", Desc: "Old roadmaps"})
+	if r := match.RankBoosted("roadmap", store.All(), 2, s.usage.Boost()); len(r) == 0 || r[0].Link.Key != "roadmap" {
+		t.Errorf("boosted ranking = %+v", r)
+	}
+	do(h, "POST", "/_/links/delete", strings.NewReader("key=roadmap"), func(r *http.Request) { r.Header.Set("Content-Type", "application/x-www-form-urlencoded") })
+	if _, ok := s.usage.All()["roadmap"]; ok {
+		t.Error("usage kept after delete")
 	}
 }

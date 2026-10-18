@@ -23,6 +23,11 @@ func OpenURL(u string) error { return exec.Command("xdg-open", u).Run() }
 // FlushDNS is a no-op here.
 func FlushDNS() {}
 
+// AddHostsElevated isn't available here; `goli hosts` prints the command instead.
+func AddHostsElevated([]string) error {
+	return errors.New("not supported on this OS; run the printed command")
+}
+
 // TailscaleBinary returns the Tailscale CLI path.
 func TailscaleBinary() string { return "tailscale" }
 

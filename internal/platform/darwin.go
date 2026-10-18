@@ -3,12 +3,14 @@
 package platform
 
 import (
+	"errors"
 	"fmt"
 	"html"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 // Name is a human name for this OS.
@@ -19,6 +21,24 @@ const Name = "macOS"
 const DefaultListen = ":80"
 
 var hostsAddrs = []string{"127.0.0.1", "::1"}
+
+// AddHostsElevated appends lines to /etc/hosts after macOS asks for the
+// user's password in its own dialog. Only that one shell command runs with
+// admin rights; goli itself never does.
+func AddHostsElevated(lines []string) error {
+	script := strconv.Quote(hostsAppendScript(lines)) // AppleScript string literal
+	prompt := strconv.Quote("goli needs to add " + hostsNames(lines) + " to /etc/hosts, once.")
+	out, err := exec.Command("/usr/bin/osascript", "-e",
+		"do shell script "+script+" with administrator privileges with prompt "+prompt).CombinedOutput()
+	if err != nil {
+		if strings.Contains(string(out), "-128") {
+			return errors.New("cancelled")
+		}
+		return fmt.Errorf("couldn't edit /etc/hosts: %s", strings.TrimSpace(string(out)))
+	}
+	FlushDNS()
+	return nil
+}
 
 // OpenURL opens u in the default browser.
 func OpenURL(u string) error { return exec.Command("open", u).Run() }
@@ -133,3 +153,16 @@ func RestartService() error {
 
 // Detach is a no-op outside Windows.
 func Detach() {}
+
+// hostsNames lists the names in hosts lines, for messages.
+func hostsNames(lines []string) string {
+	seen := map[string]bool{}
+	var out []string
+	for _, l := range lines {
+		if f := strings.Fields(l); len(f) == 2 && !seen[f[1]] {
+			seen[f[1]] = true
+			out = append(out, f[1])
+		}
+	}
+	return strings.Join(out, ", ")
+}

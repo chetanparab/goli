@@ -21,9 +21,41 @@ checksum:
   name_template: checksums.txt
 changelog:
   use: github
-# When the repo goes public, uncomment to publish `brew install chetanparab/tap/goli`:
-# brews:
-#   - repository: {owner: chetanparab, name: homebrew-tap}
-#     homepage: https://github.com/chetanparab/goli
-#     description: Personal go/ links with smart search
-#     install: bin.install "goli"
+# Package managers. Each needs HOMEBREW_TAP_TOKEN: a fine-grained GitHub token
+# with Contents: read/write on the two small repos below (and nothing else),
+# saved as an Actions secret in this repo. Without it the release still
+# publishes the archives; only these formula updates are skipped.
+homebrew_casks:
+  - name: goli
+    repository:
+      owner: chetanparab
+      name: homebrew-tap
+      token: "{{ envOrDefault \"HOMEBREW_TAP_TOKEN\" \"\" }}"
+    skip_upload: "{{ if envOrDefault \"HOMEBREW_TAP_TOKEN\" \"\" }}false{{ else }}true{{ end }}"
+    directory: Casks
+    homepage: https://goli.theanalogyarchitect.com
+    description: "Personal go/ links: give any page a short name, type go/name anywhere"
+    license: MIT
+    binaries: [goli]
+    caveats: |
+      Point go/ at this computer, then start goli at login:
+        goli hosts
+        goli install
+    # The binaries aren't notarized yet, so lift Gatekeeper's quarantine flag
+    # (the standard snippet from goreleaser's docs).
+    hooks:
+      post:
+        install: |
+          if system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/goli"]
+          end
+scoops:
+  - repository:
+      owner: chetanparab
+      name: scoop-bucket
+      token: "{{ envOrDefault \"HOMEBREW_TAP_TOKEN\" \"\" }}"
+    skip_upload: "{{ if envOrDefault \"HOMEBREW_TAP_TOKEN\" \"\" }}false{{ else }}true{{ end }}"
+    directory: bucket
+    homepage: https://goli.theanalogyarchitect.com
+    description: "Personal go/ links: give any page a short name, type go/name anywhere"
+    license: MIT

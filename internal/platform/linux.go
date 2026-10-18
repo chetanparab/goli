@@ -22,6 +22,26 @@ const DefaultListen = ":80"
 
 var hostsAddrs = []string{"127.0.0.1", "::1"}
 
+// AddHostsElevated appends lines to /etc/hosts, asking for the user's
+// password through polkit's dialog (pkexec) or, without a desktop, sudo in
+// this terminal. Only that one shell command is elevated.
+func AddHostsElevated(lines []string) error {
+	script := hostsAppendScript(lines)
+	var cmd *exec.Cmd
+	if pk, err := exec.LookPath("pkexec"); err == nil && os.Getenv("DISPLAY")+os.Getenv("WAYLAND_DISPLAY") != "" {
+		cmd = exec.Command(pk, "sh", "-c", script)
+	} else {
+		cmd = exec.Command("sudo", "sh", "-c", script)
+		cmd.Stdin = os.Stdin
+	}
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("couldn't edit /etc/hosts: %w", err)
+	}
+	FlushDNS()
+	return nil
+}
+
 // OpenURL opens u in the default browser.
 func OpenURL(u string) error { return exec.Command("xdg-open", u).Run() }
 

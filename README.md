@@ -30,10 +30,24 @@ go/dashboard              → staging or prod, depending on your context
 
 ## Install
 
-goli runs on **macOS, Windows and Linux**.
+goli runs on **macOS, Windows and Linux**. Windows support is in beta: it builds and passes its tests in CI, and we're looking for people to try a full install there ([tell us how it went](https://github.com/chetanparab/goli/issues)).
+
+**macOS** (Homebrew):
 
 ```bash
-go install github.com/chetanparab/goli/cmd/goli@latest   # needs Go 1.26+
+brew install chetanparab/tap/goli
+```
+
+**Windows** (Scoop):
+
+```powershell
+scoop bucket add goli https://github.com/chetanparab/scoop-bucket; scoop install goli
+```
+
+**Anywhere with Go 1.26+:**
+
+```bash
+go install github.com/chetanparab/goli/cmd/goli@latest
 ```
 
 Or download a prebuilt binary — [macOS (Apple silicon)](https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_arm64.tar.gz) · [macOS (Intel)](https://github.com/chetanparab/goli/releases/latest/download/goli_darwin_amd64.tar.gz) · [Windows](https://github.com/chetanparab/goli/releases/latest/download/goli_windows_amd64.zip) · [Windows ARM](https://github.com/chetanparab/goli/releases/latest/download/goli_windows_arm64.zip) · [Linux](https://github.com/chetanparab/goli/releases/latest/download/goli_linux_amd64.tar.gz) · [Linux ARM](https://github.com/chetanparab/goli/releases/latest/download/goli_linux_arm64.tar.gz) — unpack it and put `goli` somewhere on your `PATH`. On macOS, run `xattr -d com.apple.quarantine goli` once first: the binaries aren't notarized yet, so Gatekeeper blocks them otherwise. From a clone, `make install` builds into `~/.local/bin`.
@@ -43,22 +57,22 @@ Or download a prebuilt binary — [macOS (Apple silicon)](https://github.com/che
 The same three commands on every platform:
 
 ```bash
-goli hosts      # prints the one command that maps "go" to this machine in your hosts file
+goli hosts      # maps "go" to this machine in your hosts file (asks for your password once, or prints the command)
 goli install    # starts goli now and at every login
 goli doctor     # checks everything
 ```
 
 Then open **http://go/** once. After the first visit, browsers accept plain `go/standup` in the address bar.
 
-| | macOS | Windows | Linux |
+| | macOS | Windows (beta) | Linux |
 |---|---|---|---|
-| Hosts file | `/etc/hosts` — `goli hosts` prints a `sudo tee` command | `C:\Windows\System32\drivers\etc\hosts` — `goli hosts` prints a PowerShell command to run **as Administrator** | `/etc/hosts` — `goli hosts` prints a `sudo tee` command |
+| Hosts file | `/etc/hosts` — `goli hosts` asks for your password in the macOS dialog | `C:\Windows\System32\drivers\etc\hosts` — `goli hosts` asks through a UAC prompt | `/etc/hosts` — `goli hosts` asks via polkit (or `sudo`) |
 | Starts at login via | a LaunchAgent | your user's *Run* registry key (no admin rights, no console window) | a systemd user service |
 | Logs | `~/Library/Logs/goli.log` | `%LocalAppData%\goli\goli.log` | `journalctl --user -u goli` |
 | Settings | `~/.config/goli` | `%AppData%\goli` | `~/.config/goli` |
 | Port 80 | works as a normal user | works as a normal user | run `sudo setcap cap_net_bind_service=+ep $(which goli)` once |
 
-goli never asks to run itself with admin rights: `goli hosts` prints a command for you to review and run instead.
+goli never runs itself with admin rights: the only elevated step is the one small command that appends the hosts line, shown to you first (and `goli hosts` prints it for you to run by hand if you prefer).
 
 > **Browser notes.** Chrome and Edge may treat `go/x` as a search until they've seen `http://go/` once. In Firefox, set `browser.fixup.domainwhitelist.go` to `true` in `about:config`. Safari works best with `http://go/x`.
 
@@ -154,7 +168,8 @@ goli <key>[/args...]           open a link in your browser
 goli find <words...>           search links (uses Claude when configured)
 goli add <key> <url> [-d desc] [-t tag1,tag2] [-a alias1,alias2]
 goli rm <key>
-goli ls [filter]
+goli ls [filter] [-unused]     list links; -unused: never opened, or not in 90 days
+goli import <bookmarks file>   turn a browser's bookmark export into links
 goli edit                      open links.yaml in $EDITOR (validated on save)
 goli check [-local]            find dead links
 goli ctx [set k=v | unset k]   show or change context
@@ -214,6 +229,23 @@ What is sent, and only when you search: your query and the link catalog (keys, d
 
 - **Raycast**: add [`integrations/raycast`](integrations/raycast) as a Script Commands directory, then type `go/` → `standup`, or `?search words`.
 - **Shell**: `alias g=goli` → `g standup`.
+- **Phone share sheet**: with goli on your Home Screen, "Share → goli" from any app pre-fills a new link with that page.
+
+## Bring your bookmarks
+
+Every browser can export bookmarks as an HTML file (Chrome and Edge also keep a `Bookmarks` JSON file in their profile folder). `goli import` turns them into links, with keys made from the titles, and asks before writing anything:
+
+```bash
+goli import ~/Downloads/bookmarks.html -dry-run          # just look
+goli import ~/Downloads/bookmarks.html -folder "Work"    # one folder (and its subfolders)
+goli import "~/Library/Application Support/Google/Chrome/Default/Bookmarks"
+```
+
+Imported links get the tag `imported` and skip anything you've already linked. Rename a key later with `goli add <newkey> <url>` and `goli rm <oldkey>`.
+
+## Links you actually use
+
+goli counts, on this computer only, how often each link is opened (`usage.json` in the config folder; nothing is sent anywhere). Search and typo suggestions rank the links you open often and recently a little higher, and `goli ls -unused` lists the ones you never open or haven't in 90 days — handy before a spring clean.
 
 ## Security model
 

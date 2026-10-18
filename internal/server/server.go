@@ -17,11 +17,13 @@ import (
 	"time"
 
 	"github.com/chetanparab/goli/internal/ai"
+	"github.com/chetanparab/goli/internal/bookmarks"
 	"github.com/chetanparab/goli/internal/config"
 	"github.com/chetanparab/goli/internal/ctxinfo"
 	"github.com/chetanparab/goli/internal/links"
 	"github.com/chetanparab/goli/internal/match"
 	"github.com/chetanparab/goli/internal/secret"
+	"github.com/chetanparab/goli/internal/usage"
 )
 
 //go:embed web/*.html web/*.png web/icon.svg web/*.js web/manifest.webmanifest web/fonts/*.woff2
@@ -58,6 +60,7 @@ const (
 type Server struct {
 	cfg      *config.Config
 	store    *links.Store
+	usage    *usage.Store       // local open counts: ranking boost, never sent anywhere
 	tmpl     *template.Template // this server's templates, with goName bound to cfg.Name()
 	detector *ctxinfo.Detector
 	log      *slog.Logger
@@ -85,7 +88,7 @@ type cachedPicks struct {
 // New builds a Server.
 func New(cfg *config.Config, store *links.Store, log *slog.Logger) *Server {
 	s := &Server{
-		cfg: cfg, store: store, detector: ctxinfo.NewDetector(cfg.Networks), log: log,
+		cfg: cfg, store: store, usage: usage.Open(cfg.Dir()), detector: ctxinfo.NewDetector(cfg.Networks), log: log,
 		keys:  cfg.Keys(),
 		aiSem: make(chan struct{}, aiConcurrency), cache: map[string]cachedPicks{},
 		tmpl: template.Must(tmpl.Clone()).Funcs(template.FuncMap{"goName": cfg.Name}),
@@ -198,6 +201,10 @@ func (s *Server) handleGo(w http.ResponseWriter, r *http.Request) {
 			if l, ok := s.store.Get(key); ok {
 				form = linkForm{Key: l.Key, URL: l.URL, Desc: l.Desc, Tags: strings.Join(l.Tags, ", "), Aliases: strings.Join(l.Aliases, ", "), Editing: true}
 			}
+		} else if shared := sharedURL(r); shared != "" && canWrite(r) {
+			// A page shared to goli from the phone's share sheet: pre-fill the form.
+			title := strings.TrimSpace(r.URL.Query().Get("title"))
+			form = linkForm{Key: bookmarks.Key(bookmarks.Bookmark{Title: title, URL: shared}), URL: shared, Desc: title, Open: true}
 		}
 		s.render(w, http.StatusOK, "home.html", map[string]any{
 			"Links": s.store.All(), "AI": s.getRanker() != nil, "AIName": providerName(ai.Active(s.aiSettings())),
@@ -214,6 +221,7 @@ func (s *Server) handleGo(w http.ResponseWriter, r *http.Request) {
 		s.log.Debug("redirect target", "path", path, "to", res.URL)
 		w.Header().Set("Cache-Control", "no-store")
 		http.Redirect(w, r, res.URL, http.StatusFound)
+		s.usage.Record(res.Link.Key)
 	case errors.As(err, &missing):
 		s.render(w, http.StatusBadRequest, "notfound.html", map[string]any{
 			"Key": missing.Link.Key, "Missing": missing, "Suggestions": nil,
@@ -225,7 +233,7 @@ func (s *Server) handleGo(w http.ResponseWriter, r *http.Request) {
 			"Form":        linkForm{Key: key},
 			"KeyValid":    links.ValidateKey(key) == nil,
 			"CanWrite":    canWrite(r),
-			"Suggestions": match.Rank(strings.ReplaceAll(key, "/", " "), s.store.All(), 6),
+			"Suggestions": match.RankBoosted(strings.ReplaceAll(key, "/", " "), s.store.All(), 6, s.usage.Boost()),
 		})
 	default:
 		// e.g. a template argument that can't go in a host name
@@ -248,8 +256,9 @@ func searchQuery(r *http.Request) string {
 	if len(params) > 0 && len(links.CtxOverrides(params)) == len(params) {
 		return ""
 	}
-	// Home-page UI parameters (?edit=key, ?saved=key) aren't searches.
-	if params.Has("edit") || params.Has("saved") {
+	// Home-page UI parameters (?edit=key, ?saved=key) and a page shared from
+	// the phone (?url=&title=&text=) aren't searches.
+	if params.Has("edit") || params.Has("saved") || params.Has("url") || params.Has("title") || params.Has("text") {
 		return ""
 	}
 	q, err := url.QueryUnescape(raw)
@@ -301,16 +310,31 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(strings.TrimPrefix(q, "go/"), "/")
 		if res, err := s.store.Resolve(path, nil, s.context(r)); err == nil {
 			http.Redirect(w, r, res.URL, http.StatusFound)
+			s.usage.Record(res.Link.Key)
 			return
 		}
 	}
 	s.search(w, r, q, direct || r.URL.Query().Get("lucky") == "1")
 }
 
+// sharedURL is the page a phone's share sheet sent us (Android often puts
+// the URL in "text"), or "" when the request isn't a share.
+func sharedURL(r *http.Request) string {
+	q := r.URL.Query()
+	for _, p := range []string{"url", "text"} {
+		for _, f := range strings.Fields(q.Get(p)) {
+			if u, err := url.Parse(f); err == nil && (u.Scheme == "http" || u.Scheme == "https") && u.Host != "" {
+				return u.String()
+			}
+		}
+	}
+	return ""
+}
+
 // linkForm pre-fills the create/edit form.
 type linkForm struct {
 	Key, URL, Desc, Tags, Aliases string
-	Editing                       bool
+	Editing, Open                 bool
 }
 
 type searchResult struct {
@@ -341,7 +365,7 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request, q string, lucky 
 		}
 	}
 	if !usedAI {
-		for _, m := range match.Rank(q, all, 10) {
+		for _, m := range match.RankBoosted(q, all, 10, s.usage.Boost()) {
 			results = append(results, searchResult{Link: m.Link, Confidence: m.Score})
 		}
 	}
@@ -349,6 +373,7 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request, q string, lucky 
 		res, err := s.store.Resolve(results[0].Link.Key, nil, s.context(r))
 		if err == nil {
 			http.Redirect(w, r, res.URL, http.StatusFound)
+			s.usage.Record(res.Link.Key)
 			return
 		}
 	}
@@ -487,6 +512,7 @@ func (s *Server) formDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	s.usage.Forget(links.NormalizeKey(r.FormValue("key")))
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -518,6 +544,7 @@ func (s *Server) apiDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
+	s.usage.Forget(links.NormalizeKey(r.PathValue("key")))
 	w.WriteHeader(http.StatusNoContent)
 }
 

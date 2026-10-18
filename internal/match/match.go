@@ -21,7 +21,12 @@ type Result struct {
 const MinScore = 0.35
 
 // Rank returns up to n links that best match q, best first.
-func Rank(q string, all []*links.Link, n int) []Result {
+func Rank(q string, all []*links.Link, n int) []Result { return RankBoosted(q, all, n, nil) }
+
+// RankBoosted is Rank with a per-key bonus (e.g. how often a link is opened)
+// added to each text score. The bonus only applies to links that match at
+// all, so an unrelated favourite never shows up.
+func RankBoosted(q string, all []*links.Link, n int, boost func(key string) float64) []Result {
 	q = strings.ToLower(strings.TrimSpace(q))
 	if q == "" {
 		return nil
@@ -29,6 +34,9 @@ func Rank(q string, all []*links.Link, n int) []Result {
 	var out []Result
 	for _, l := range all {
 		if s := Score(q, l); s >= MinScore {
+			if boost != nil {
+				s = min(1, s+boost(l.Key))
+			}
 			out = append(out, Result{Link: l, Score: s})
 		}
 	}
