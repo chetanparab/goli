@@ -66,7 +66,7 @@
       <div class="pitch">
         <p class="eyebrow"><b>Open source</b> &nbsp;·&nbsp; free<span class="hide-sm"> &nbsp;·&nbsp; runs on your computer</span></p>
         <h1 class="display" id="hero-title">The internet, <em>on first&#8209;name&nbsp;terms.</em></h1>
-        <p class="lede">Give any page a short name. Type <code>go/</code> and the name in any browser — on your laptop or your phone — and you're there.</p>
+        <p class="lede">Give any page a short name. Type <code>go/</code> and the name in any browser — on your laptop or your phone — and you're there. Your links, your names, your computer.</p>
         <div class="actions">
           <a class="btn" id="dl-btn" href="https://github.com/chetanparab/goli/releases/latest" rel="noopener">Download goli <span aria-hidden="true">↓</span></a>
           <a class="link" href="#start">Other ways to install</a>
@@ -107,6 +107,15 @@
             <div class="fl-meta"><span>Status<b class="ok">On time</b></span><span>Departed<b>17:20</b></span><span>Lands<b>19:05</b></span><span>Gate<b>B12</b></span></div>
           </div>
 
+          <div class="pg pg-dash" data-page="dash">
+            <div class="dash-head"><div><p class="pg-title">Checkout · <span class="dash-env">prod</span></p><p class="pg-sub">23:40 · on call · opened as go/dash</p></div><span class="dash-live">● live</span></div>
+            <div class="dash-grid">
+              <div class="dash-card"><span class="dash-k">Orders / min</span><b>1,284</b><span class="spark"><i class="h40"></i><i class="h55"></i><i class="h48"></i><i class="h70"></i><i class="h64"></i><i class="h82"></i><i class="h76"></i><i class="h90"></i></span></div>
+              <div class="dash-card"><span class="dash-k">p95 latency</span><b>312 ms</b><span class="spark"><i class="h60"></i><i class="h52"></i><i class="h58"></i><i class="h44"></i><i class="h50"></i><i class="h38"></i><i class="h42"></i><i class="h36"></i></span></div>
+              <div class="dash-card"><span class="dash-k">Errors</span><b class="ok">0.02%</b><span class="spark"><i class="h30"></i><i class="h22"></i><i class="h26"></i><i class="h18"></i><i class="h20"></i><i class="h14"></i><i class="h16"></i><i class="h12"></i></span></div>
+            </div>
+          </div>
+
           <div class="pg pg-goli" data-page="typo">
             <div class="g-mark">go<i>/</i>li</div>
             <p class="g-h">go/roadmp doesn't exist yet</p>
@@ -137,9 +146,15 @@
           <button type="button" class="scene" aria-pressed="false" data-scene="2"><code>go/roadmp</code></button>
           <button type="button" class="scene" aria-pressed="false" data-scene="3"><code>go/flight/6E-2134</code></button>
           <button type="button" class="scene" aria-pressed="false" data-scene="4"><code>go/?q3 sales</code></button>
+          <button type="button" class="scene" aria-pressed="false" data-scene="5"><code>g/daily</code></button>
+          <button type="button" class="scene" aria-pressed="false" data-scene="6"><code>go/dash</code></button>
         </div>
       </div>
     </section>
+
+    <ul class="usp" aria-label="What goli gives you">
+      <li>No server</li><li>No account</li><li>Your own word</li><li>Aliases</li><li>Typos forgiven</li><li>AI, optional</li><li>Context-aware</li><li>Phone &amp; terminal</li><li>macOS · Windows · Linux</li><li>Open source, MIT</li>
+    </ul>
 
     <section class="section" id="phone-demo" aria-labelledby="s1">
       <div class="section-head"><span class="num">i.</span><h2 class="title" id="s1">Same links, <em>on your phone</em></h2></div>
@@ -187,8 +202,10 @@
 <pre class="term live" id="term" aria-label="Terminal examples"><span class="p">$</span> goli standup        <span class="m"># opens it in your browser</span>
 https://meet.google.com/abc-defg-hij
 
-<span class="p">$</span> goli add pr https://github.com/acme/app/pull/{1}
-go/pr → https://github.com/acme/app/pull/{1}
+<span class="p">$</span> goli add standup https://meet.google.com/abc-defg-hij -a daily,scrum
+go/standup → https://meet.google.com/abc-defg-hij
+go/daily → same
+go/scrum → same
 
 <span class="p">$</span> goli find revenue
 <span class="m"> 85%</span>  <span class="k">forecast</span>             Revenue forecast sheet</pre>
@@ -249,21 +266,51 @@ go/pr → https://github.com/acme/app/pull/{1}
       </div>
     </section>
 
-    <section class="section" aria-labelledby="s5">
-      <div class="section-head"><span class="num">vi.</span><h2 class="title" id="s5">Small tool, <em>careful details</em></h2></div>
-      <ol class="principles">
-        <li><h3>Typos forgiven, names your own</h3><p>A wrong name shows the closest matches; a missing one can be created right there. One link can answer to several names, and <code>go/</code> itself can be <code>g/</code> or any word you choose.</p></li>
-        <li><h3>Search by meaning</h3><p><code>go/?</code> plus a description finds the link you meant — powered by your Claude Code login or your own API key, or off entirely.</p></li>
-        <li><h3>One name, many places</h3><p><code>go/dashboard</code> can open staging at work and prod on call — by environment, network or time of day.</p></li>
-        <li><h3>Links you can review</h3><p>Everything lives in one readable file. Keep it in git, review changes, and let <code>goli check</code> catch dead links.</p></li>
-        <li><h3>Everywhere you are</h3><p>Mac, Windows or Linux; the address bar, the terminal, Raycast — and your iPhone or Android phone.</p></li>
-        <li><h3>Built to be trusted</h3><p>Security-reviewed, strict by default, and every release is built in the open with signed provenance you can verify.</p></li>
+    <section class="section" id="features" aria-labelledby="s5">
+      <div class="section-head"><span class="num">vi.</span><h2 class="title" id="s5">Everything it does, <em>at a glance</em></h2></div>
+      <ol class="feat" data-reveal>
+        <li>
+          <div class="mini mini-word" aria-hidden="true"><span class="bar"><b>go</b>/standup</span><span class="bar on"><b>g</b>/standup</span><span class="bar"><b>my</b>/standup</span></div>
+          <h3>Your word, your way</h3><p><code>go/</code> is only the default. <code>names: [g]</code> and you type <code>g/standup</code> — handy on a work laptop where <code>go/</code> is already taken.</p>
+        </li>
+        <li>
+          <div class="mini mini-alias" aria-hidden="true"><span class="names"><i>standup</i><i>daily</i><i>scrum</i></span><span class="arrow">→</span><span class="dest">meet.google.com/abc-defg-hij</span></div>
+          <h3>One link, many names</h3><p><code>aliases: [daily, scrum]</code> — every name opens it, every name counts in search, and they all live on one line.</p>
+        </li>
+        <li>
+          <div class="mini mini-typo" aria-hidden="true"><span class="typed">go/roadm<u>p</u></span><span class="fix">Did you mean <b>go/roadmap</b> <i>✓</i></span></div>
+          <h3>Typos forgiven</h3><p>A wrong name shows the closest matches, ranked. A missing one can be created right there on the page.</p>
+        </li>
+        <li>
+          <div class="mini mini-ai" aria-hidden="true"><span class="q">go/?where do I file expenses</span><span class="hit"><b>go/expenses</b><em>94%</em></span></div>
+          <h3>Search by meaning</h3><p>Describe it and goli finds it — with your Claude Code login or your own API key. Or leave AI off: built-in search still forgives typos, and nothing leaves your computer.</p>
+        </li>
+        <li>
+          <div class="mini mini-ctx" aria-hidden="true"><span class="row"><i>09:12 · office Wi-Fi</i><b>staging</b></span><span class="row on"><i>23:40 · on call</i><b>prod</b></span></div>
+          <h3>One name, many places</h3><p><code>go/dash</code> opens staging at your desk and prod on call — chosen by time of day, network or environment.</p>
+        </li>
+        <li>
+          <div class="mini mini-param" aria-hidden="true"><span class="tpl">pr: github.com/acme/app/pull/<b>{1}</b></span><span class="ex">go/pr/<b>482</b></span><span class="ex">go/jira/<b>ACME-7</b></span></div>
+          <h3>Links with arguments</h3><p>One template, any number: pull requests, tickets, flights, invoices. Extra path and query are passed through.</p>
+        </li>
+        <li>
+          <div class="mini mini-code" aria-hidden="true"><span class="ln">standup: https://meet.google.com/abc</span><span class="ln add">+ okrs: https://notion.so/okrs-q3</span><span class="ln ok">✓ goli check · 50 links, 0 broken</span></div>
+          <h3>Links you can review</h3><p>Everything lives in one readable file. Keep it in git, review changes like code, and let <code>goli check</code> catch dead links.</p>
+        </li>
+        <li>
+          <div class="mini mini-every" aria-hidden="true"><span>macOS</span><span>Windows</span><span>Linux</span><span>iPhone</span><span>Android</span><span>Terminal</span><span>Raycast</span></div>
+          <h3>Everywhere you are</h3><p>The address bar, the terminal, Raycast — and your phone over Tailscale. Same file, same links, every device.</p>
+        </li>
+        <li>
+          <div class="mini mini-trust" aria-hidden="true"><span class="shield">✓</span><span class="t"><b>Signed provenance</b>Reviewed, strict by default. No account, no analytics, no cloud.</span></div>
+          <h3>Built to be trusted</h3><p>Every release is built in the open with provenance you can verify. Your links never leave your machine unless you ask.</p>
+        </li>
       </ol>
     </section>
 
     <section class="section" id="history" aria-labelledby="s-hist">
       <div class="section-head"><span class="num">vii.</span><h2 class="title" id="s-hist">Twenty years of <em>go/</em> — and the next step</h2></div>
-      <ol class="tl" id="tl">
+      <ol class="tl" id="tl" data-reveal>
         <li><span class="when">2006 <span class="who">Google</span></span><h3>The first go/ links</h3>
           <p>Google's SysOps team was tired of hand-making internal short URLs, so Eric DeFriez built a server that let any Googler name a link themselves; Benjamin Staffin was among the first to work on it. Type <code>go/payroll</code>, land there. Googlers still use it every day.</p></li>
         <li><span class="when">2012 <span class="who">Yahoo</span></span><h3>The idea travels</h3>

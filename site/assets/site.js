@@ -99,6 +99,10 @@ const scenes = [
     caption: "Mum's flight lands at seven. <b>go/flight/</b> works with any flight number." },
   { typed: "go/?q3 sales", url: "go/?q3 sales", title: "Search · goli", fav: "goli", page: "search",
     caption: "Can't remember the name? Describe it. goli finds <b>go/sales</b> by its description (optional AI)." },
+  { typed: "g/daily", url: "meet.google.com/abc-defg-hij", title: "Daily stand-up", fav: "meet", page: "meet",
+    caption: "Your word, your names: <b>g/</b> instead of go/, and <b>daily</b> as another name for standup. Both are one line in your config." },
+  { typed: "go/dash", url: "grafana.acme.in/d/checkout-prod", title: "Checkout · prod", fav: "dash", page: "dash",
+    caption: "At your desk, <b>go/dash</b> opens staging. On call at night, prod. One name — chosen by time, network or environment." },
 ];
 
 const browser = $("browser");
@@ -238,6 +242,7 @@ if (term && !reduced) {
   const P = '<span class="p">$</span> ';
   const sessions = [
     ['goli standup        <span class="m"># opens it in your browser</span>', "https://meet.google.com/abc-defg-hij"],
+    ["goli add standup https://meet.google.com/abc-defg-hij -a daily,scrum", "go/standup → https://meet.google.com/abc-defg-hij\ngo/daily → same\ngo/scrum → same"],
     ["goli add pr https://github.com/acme/app/pull/{1}", "go/pr → https://github.com/acme/app/pull/{1}"],
     ["goli find revenue", '<span class="m"> 85%</span>  <span class="k">forecast</span>             Revenue forecast sheet'],
     ["goli check", '<span class="m">✗</span>  <span class="k">oldwiki</span>   404 Not Found  https://wiki.example.com/old\n<span class="m">✓</span>  <span class="k">standup</span>   200 OK         https://meet.google.com/abc-defg-hij\ngoli: 1 broken link(s)'],
@@ -265,21 +270,21 @@ if (term && !reduced) {
   })();
 }
 
-// ── History timeline: each era fades in as it scrolls into view ──────────
-const tl = $("tl");
-if (tl && !reduced && "IntersectionObserver" in window) {
-  tl.classList.add("tl-anim");
-  const items = [...tl.children];
-  const io = new IntersectionObserver((entries) => {
-    for (const e of entries) {
-      if (!e.isIntersecting) continue;
-      // Stagger siblings that arrive in the same batch, so the rail "draws" downwards.
-      const i = items.indexOf(e.target);
+// ── Scroll reveal: children of [data-reveal] fade in as they arrive ───────
+if (!reduced && "IntersectionObserver" in window) {
+  for (const list of document.querySelectorAll("[data-reveal]")) {
+    list.classList.add("reveal");
+    const items = [...list.children];
+    const io = new IntersectionObserver((entries) => {
+      // Stagger siblings that arrive in the same batch, so lists "draw" in order.
       const batch = entries.filter((x) => x.isIntersecting).map((x) => items.indexOf(x.target)).sort((a, b) => a - b);
-      e.target.style.transitionDelay = `${batch.indexOf(i) * 120}ms`;
-      e.target.classList.add("in");
-      io.unobserve(e.target);
-    }
-  }, { threshold: 0.15, rootMargin: "0px 0px -8% 0px" });
-  items.forEach((li) => io.observe(li));
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        e.target.style.transitionDelay = `${batch.indexOf(items.indexOf(e.target)) * 110}ms`;
+        e.target.classList.add("in");
+        io.unobserve(e.target);
+      }
+    }, { threshold: 0.15, rootMargin: "0px 0px -8% 0px" });
+    items.forEach((li) => io.observe(li));
+  }
 }
