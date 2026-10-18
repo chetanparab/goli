@@ -23,15 +23,15 @@ changelog:
   use: github
 # Package managers. Each needs HOMEBREW_TAP_TOKEN: a fine-grained GitHub token
 # with Contents: read/write on the two small repos below (and nothing else),
-# saved as an Actions secret in this repo. Without it the release still
-# publishes the archives; only these formula updates are skipped.
+# saved as an Actions secret in this repo (release.yml always passes it, so
+# the variable exists even when empty, and an empty one just skips this).
 homebrew_casks:
   - name: goli
     repository:
       owner: chetanparab
       name: homebrew-tap
-      token: "{{ envOrDefault \"HOMEBREW_TAP_TOKEN\" \"\" }}"
-    skip_upload: "{{ if envOrDefault \"HOMEBREW_TAP_TOKEN\" \"\" }}false{{ else }}true{{ end }}"
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    skip_upload: "{{ if .Env.HOMEBREW_TAP_TOKEN }}false{{ else }}true{{ end }}"
     directory: Casks
     homepage: https://goli.theanalogyarchitect.com
     description: "Personal go/ links: give any page a short name, type go/name anywhere"
@@ -53,8 +53,8 @@ scoops:
   - repository:
       owner: chetanparab
       name: scoop-bucket
-      token: "{{ envOrDefault \"HOMEBREW_TAP_TOKEN\" \"\" }}"
-    skip_upload: "{{ if envOrDefault \"HOMEBREW_TAP_TOKEN\" \"\" }}false{{ else }}true{{ end }}"
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    skip_upload: "{{ if .Env.HOMEBREW_TAP_TOKEN }}false{{ else }}true{{ end }}"
     directory: bucket
     homepage: https://goli.theanalogyarchitect.com
     description: "Personal go/ links: give any page a short name, type go/name anywhere"
