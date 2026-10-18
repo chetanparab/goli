@@ -253,3 +253,46 @@ func TestPutWritesThroughSymlinkAndKeepsMode(t *testing.T) {
 		t.Error("edit didn't reach the symlink target")
 	}
 }
+
+func TestAliases(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "links.yaml")
+	if err := os.WriteFile(path, []byte("standup:\n  url: https://meet.example.com/abc\n  aliases: [daily, Scrum]\npr: https://github.com/pulls\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"standup", "daily", "scrum", "SCRUM"} {
+		l, ok := s.Get(name)
+		if !ok || l.Key != "standup" {
+			t.Errorf("Get(%q) = %v, %v", name, l, ok)
+		}
+	}
+	if n := len(s.All()); n != 2 {
+		t.Errorf("All() has %d links, want 2 (aliases aren't separate links)", n)
+	}
+	// Aliases can't shadow a key or be reused by another link.
+	for _, bad := range []string{
+		"a:\n  url: https://x.example\n  aliases: [pr]\npr: https://y.example\n",
+		"a:\n  url: https://x.example\n  aliases: [z]\nb:\n  url: https://y.example\n  aliases: [z]\n",
+		"a:\n  url: https://x.example\n  aliases: [a]\n",
+	} {
+		if _, err := Parse([]byte(bad)); err == nil {
+			t.Errorf("Parse accepted:\n%s", bad)
+		}
+	}
+	if err := s.Put(&Link{Key: "daily", URL: "https://other.example"}); err == nil {
+		t.Error("Put over an alias should fail")
+	}
+	if err := s.Delete("daily"); err == nil || !strings.Contains(err.Error(), "alias of") {
+		t.Errorf("Delete(alias) = %v", err)
+	}
+	if err := s.Delete("standup"); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := s.Get("daily"); ok {
+		t.Error("alias outlived its link")
+	}
+}

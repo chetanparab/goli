@@ -66,6 +66,17 @@ goli never asks to run itself with admin rights: `goli hosts` prints a command f
 
 After upgrading goli, run `goli restart`.
 
+### Your own word before the slash
+
+`go` is only the default. If your company already uses `go/` on your work laptop, or you'd rather type less, set `names` in `config.yaml` and run `goli hosts` again for the new hosts-file line:
+
+```yaml
+names: [g]          # g/standup
+names: [go, g]      # both work; goli shows the first one
+```
+
+One link can also answer to several names: `aliases: [daily, scrum]` on `standup` (or `goli add standup <url> -a daily,scrum`) makes `go/daily` and `go/scrum` open it, and they're searched like the key.
+
 ### Use go/ on your phone (Tailscale)
 
 Phones can't edit `/etc/hosts`, but [Tailscale](https://tailscale.com) (free for personal use) gives your devices a private network with its own DNS:
@@ -74,7 +85,7 @@ Phones can't edit `/etc/hosts`, but [Tailscale](https://tailscale.com) (free for
 2. In the Tailscale admin console, rename the computer to `go` (MagicDNS must be on, which is the default).
 3. In `~/.config/goli/config.yaml`, using your own MagicDNS name from `tailscale status` (not a bare `*.ts.net`, which would trust every tailnet):
    ```yaml
-   hostnames: [go, localhost, 127.0.0.1, "go.tailXXXX.ts.net"]
+   hostnames: [localhost, 127.0.0.1, "go.tailXXXX.ts.net"]
    allow: [tailscale]
    allow_write: true     # optional: add, edit and delete links from your phone too
    # listen: ":80"       # Windows only: the default listens on 127.0.0.1
@@ -103,6 +114,7 @@ roadmap:                                          # full form
   url: https://docs.example.com/roadmap
   desc: Product roadmap and quarterly plans       # desc + tags improve search
   tags: [planning, docs]
+  aliases: [plan, okrs]                           # go/plan and go/okrs open it too
 jira: https://acme.atlassian.net/browse/{1}       # go/jira/ABC-123
 pr: https://github.com/{owner}/{repo}/pull/{n}    # go/pr/acme/api/42
 team/wiki: https://wiki.example.com               # nested keys
@@ -140,7 +152,7 @@ The server reloads the file automatically when it changes, so `git pull` is enou
 ```text
 goli <key>[/args...]           open a link in your browser
 goli find <words...>           search links (uses Claude when configured)
-goli add <key> <url> [-d desc] [-t tag1,tag2]
+goli add <key> <url> [-d desc] [-t tag1,tag2] [-a alias1,alias2]
 goli rm <key>
 goli ls [filter]
 goli edit                      open links.yaml in $EDITOR (validated on save)
@@ -160,7 +172,8 @@ goli doctor                    check that everything is wired up
 
 ```yaml
 listen: ":80"                           # "127.0.0.1:80" by default on Windows
-hostnames: [go, localhost, 127.0.0.1]   # accepted Host headers ("*.x" matches subdomains)
+names: [go]                             # what you type before the slash; [go, g] gives you g/ too
+hostnames: [localhost, 127.0.0.1]       # other accepted Host headers ("*.x" matches subdomains)
 # links_file: ~/code/goli-links/links.yaml
 # allow: [tailscale]                    # other devices (see "Use go/ on your phone")
 # allow_write: false
@@ -205,7 +218,7 @@ What is sent, and only when you search: your query and the link catalog (keys, d
 ## Security model
 
 - Requests are accepted only from loopback, plus networks you list in `allow` (and only when they arrive on an address in those networks). Allowed devices are read-only unless `allow_write: true`.
-- The `Host` header must be one of `hostnames`, which blocks DNS-rebinding attacks from web pages.
+- The `Host` header must be one of `names` or `hostnames`, which blocks DNS-rebinding attacks from web pages.
 - Cross-origin writes are refused using `Sec-Fetch-Site`/`Origin` (Go's `CrossOriginProtection`); the JSON API also requires `Content-Type: application/json`.
 - Pages send `X-Frame-Options: DENY` and a strict `Content-Security-Policy`, so other sites can't frame goli (no clickjacking).
 - Paths and queries are capped at 512 bytes; AI search runs only for searches you start yourself.

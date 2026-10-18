@@ -5,7 +5,7 @@
   <strong>{{if .UsedAI}}Best matches (AI){{else}}Matches{{end}}</strong>
   {{range .Results}}
     <a class="result" href="/{{.Link.Key}}">
-      <span class="k">go/{{.Link.Key}}</span> <span class="muted">{{.Link.Desc}}</span>
+      <span class="k">{{goName}}/{{.Link.Key}}</span> <span class="muted">{{.Link.Desc}}</span>
       {{if .Reason}}<div style="font-size:.9em">{{.Reason}}</div>{{end}}
       <div class="muted mono" style="font-size:.8em">{{.Link.URL}}</div>
       <div class="bar" title="{{pct .Confidence}}% match"><span style="width:{{pct .Confidence}}%"></span></div>

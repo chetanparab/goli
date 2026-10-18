@@ -40,6 +40,8 @@ type Link struct {
 	Desc     string    `yaml:"desc,omitempty" json:"desc,omitempty"`
 	Tags     []string  `yaml:"tags,omitempty" json:"tags,omitempty"`
 	Variants []Variant `yaml:"variants,omitempty" json:"variants,omitempty"`
+	// Aliases are other names that open this link: go/daily for go/standup.
+	Aliases []string `yaml:"aliases,omitempty" json:"aliases,omitempty"`
 }
 
 // UnmarshalYAML accepts the short `key: url` form as well as a mapping.
@@ -53,7 +55,7 @@ func (l *Link) UnmarshalYAML(n *yaml.Node) error {
 }
 
 func (l *Link) isShort() bool {
-	return l.Desc == "" && len(l.Tags) == 0 && len(l.Variants) == 0
+	return l.Desc == "" && len(l.Tags) == 0 && len(l.Variants) == 0 && len(l.Aliases) == 0
 }
 
 var keyRe = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]*(/[a-z0-9._-]+)*$`)
@@ -84,6 +86,18 @@ func (l *Link) Validate() error {
 			return fmt.Errorf("variant: %w", err)
 		}
 	}
+	seen := map[string]bool{l.Key: true}
+	for i, a := range l.Aliases {
+		a = NormalizeKey(a)
+		if err := ValidateKey(a); err != nil {
+			return fmt.Errorf("alias: %w", err)
+		}
+		if seen[a] {
+			return fmt.Errorf("alias %q repeats the link's own name", a)
+		}
+		seen[a] = true
+		l.Aliases[i] = a
+	}
 	return nil
 }
 
@@ -98,7 +112,8 @@ func validURL(u string) error {
 type Store struct {
 	path  string
 	mu    sync.RWMutex
-	links map[string]*Link
+	links map[string]*Link // by key
+	named map[string]*Link // by key and by alias
 	mtime time.Time
 }
 
@@ -138,10 +153,23 @@ func (s *Store) load() error {
 	s.mu.Lock()
 	// An edit() may have installed a newer copy while we were reading.
 	if s.links == nil || fi.ModTime().After(s.mtime) {
-		s.links, s.mtime = links, fi.ModTime()
+		s.links, s.named, s.mtime = links, byName(links), fi.ModTime()
 	}
 	s.mu.Unlock()
 	return nil
+}
+
+// byName indexes links under their keys and aliases. Parse has already
+// rejected collisions.
+func byName(links map[string]*Link) map[string]*Link {
+	out := make(map[string]*Link, len(links))
+	for k, l := range links {
+		out[k] = l
+		for _, a := range l.Aliases {
+			out[a] = l
+		}
+	}
+	return out
 }
 
 // Parse decodes links.yaml content.
@@ -164,6 +192,19 @@ func Parse(data []byte) (map[string]*Link, error) {
 		}
 		out[l.Key] = l
 	}
+	// Aliases must not shadow a key or another link's alias.
+	owner := map[string]string{}
+	for _, l := range out {
+		for _, a := range l.Aliases {
+			if _, isKey := out[a]; isKey {
+				return nil, fmt.Errorf("alias %q of %q is already a link", a, l.Key)
+			}
+			if o, dup := owner[a]; dup && o != l.Key {
+				return nil, fmt.Errorf("alias %q belongs to both %q and %q", a, o, l.Key)
+			}
+			owner[a] = l.Key
+		}
+	}
 	return out, nil
 }
 
@@ -182,12 +223,12 @@ func (s *Store) refresh() {
 	}
 }
 
-// Get returns the link stored under key.
+// Get returns the link stored under key, which may be one of its aliases.
 func (s *Store) Get(key string) (*Link, bool) {
 	s.refresh()
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	l, ok := s.links[NormalizeKey(key)]
+	l, ok := s.named[NormalizeKey(key)]
 	return l, ok
 }
 
@@ -211,6 +252,9 @@ func (s *Store) Put(l *Link) error {
 		return err
 	}
 	return s.edit(func(root *yaml.Node) error {
+		if o, ok := s.named[l.Key]; ok && o.Key != l.Key {
+			return fmt.Errorf("%q is already an alias of %q", l.Key, o.Key)
+		}
 		val := &yaml.Node{}
 		if l.isShort() {
 			val = &yaml.Node{Kind: yaml.ScalarNode, Value: l.URL}
@@ -237,6 +281,9 @@ func (s *Store) Delete(key string) error {
 				root.Content = append(root.Content[:i], root.Content[i+2:]...)
 				return nil
 			}
+		}
+		if l, ok := s.named[key]; ok {
+			return fmt.Errorf("%q is an alias of %q: delete that, or edit its aliases", key, l.Key)
 		}
 		return fmt.Errorf("no link named %q", key)
 	})
@@ -295,7 +342,7 @@ func (s *Store) edit(fn func(root *yaml.Node) error) error {
 	if err != nil {
 		return err
 	}
-	s.links, s.mtime = links, fi.ModTime()
+	s.links, s.named, s.mtime = links, byName(links), fi.ModTime()
 	return nil
 }
 

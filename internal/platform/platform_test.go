@@ -19,8 +19,8 @@ func TestHostsHas(t *testing.T) {
 }
 
 func TestHostsInstructions(t *testing.T) {
-	got := HostsInstructions(HostsLines)
-	for _, want := range []string{"127.0.0.1 go", "goli"} {
+	got := HostsInstructions(HostsLines([]string{"go", "g"}))
+	for _, want := range []string{"127.0.0.1 go", "127.0.0.1 g", "goli"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("instructions missing %q:\n%s", want, got)
 		}

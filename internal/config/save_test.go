@@ -68,3 +68,40 @@ func TestSetAIWritesThroughSymlink(t *testing.T) {
 		t.Errorf("target not updated:\n%s", b)
 	}
 }
+
+func TestNames(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("GOLI_HOME", dir)
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Name() != "go" || len(cfg.Names) != 1 {
+		t.Errorf("default names = %v", cfg.Names)
+	}
+	if got := strings.Join(cfg.Hosts(), ","); got != "go,localhost,127.0.0.1" {
+		t.Errorf("Hosts() = %s", got)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte("names: [G, go, g]\nhostnames: [go, x.test]\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err = Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(cfg.Names, ","); got != "g,go" {
+		t.Errorf("Names = %s", got)
+	}
+	if got := strings.Join(cfg.Hosts(), ","); got != "g,go,x.test" {
+		t.Errorf("Hosts() = %s", got)
+	}
+	if got := strings.Join(LoadNames(), ","); got != "g,go" {
+		t.Errorf("LoadNames() = %s", got)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte("names: [\"bad name\"]\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(); err == nil {
+		t.Error("a name with a space should be rejected")
+	}
+}

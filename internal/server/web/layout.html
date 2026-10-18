@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="/_/icon-180.png">
 <link rel="manifest" href="/_/manifest.webmanifest">
 <link rel="preload" href="/_/fonts/hanken.woff2" as="font" type="font/woff2" crossorigin>
-<meta name="apple-mobile-web-app-title" content="go/">
+<meta name="apple-mobile-web-app-title" content="{{goName}}/">
 <meta name="theme-color" content="#0B0B0D">
 <style>
 /* Design tokens and type from The Analogy Architect (theanalogyarchitect.com). */
@@ -61,6 +61,7 @@ input[readonly]{color:var(--ink-faint)}
 table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:6px}
 td{padding:9px 6px;border-top:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
 td.key{width:26%;font-weight:600}
+td.key .alias{font-weight:400;color:var(--ink-faint);margin-left:6px;text-decoration:none}td.key .alias::before{content:"· "}
 td.url{color:var(--ink-faint);font-size:.85em}
 td.del{width:98px;text-align:right;white-space:nowrap}td.del form{display:inline}
 .tag{display:inline-block;font-size:9.5px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);
@@ -134,6 +135,7 @@ footer a{color:var(--ink-soft)}
   <input name="url" type="url" value="{{.URL}}" placeholder="https://…" aria-label="URL" required>
   <input name="desc" value="{{.Desc}}" placeholder="description (helps search)" aria-label="Description">
   <input name="tags" value="{{.Tags}}" placeholder="tags, comma separated" aria-label="Tags">
+  <input name="aliases" value="{{.Aliases}}" placeholder="other names, comma separated (optional)" aria-label="Aliases">
   <div class="wide"><button type="submit">{{if .Editing}}Save changes{{else}}Save link{{end}}</button>{{if .Editing}} <a class="muted" href="/">Cancel</a>{{end}}</div>
 </form>
 {{end}}

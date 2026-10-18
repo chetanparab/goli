@@ -8,7 +8,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 
@@ -39,6 +41,10 @@ type AI struct {
 type Config struct {
 	// Listen is the address the server binds. See README for why the default is ":80".
 	Listen string `yaml:"listen"`
+	// Names are the words typed before the slash: "go" makes go/standup work.
+	// Several are fine ([go, g]); the first is the one goli shows. Each needs
+	// a hosts-file line (`goli hosts`), and each is accepted as a Host header.
+	Names []string `yaml:"names"`
 	// Hostnames are the Host header values the server accepts (DNS-rebinding
 	// protection). An entry like "*.ts.net" matches any subdomain.
 	Hostnames []string `yaml:"hostnames"`
@@ -82,7 +88,8 @@ func Dir() (string, error) {
 func defaults() Config {
 	return Config{
 		Listen:    platform.DefaultListen,
-		Hostnames: []string{"go", "localhost", "127.0.0.1"},
+		Names:     []string{"go"},
+		Hostnames: []string{"localhost", "127.0.0.1"},
 		AI:        AI{Enabled: false, Provider: "claude-code", SendURLs: "host"},
 	}
 }
@@ -114,11 +121,82 @@ func Load() (*Config, error) {
 	if err := dec.Decode(&cfg); err != nil && !errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
+	names, err := normalizeNames(cfg.Names)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Names = names
 	return &cfg, nil
 }
 
 // Dir is the directory this config was loaded from.
 func (c *Config) Dir() string { return c.dir }
+
+// nameRe is what a name before the slash may look like: a DNS label.
+var nameRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
+
+// normalizeNames lowercases, dedupes and validates names, defaulting to "go".
+func normalizeNames(names []string) ([]string, error) {
+	var out []string
+	seen := map[string]bool{}
+	for _, n := range names {
+		n = strings.ToLower(strings.TrimSpace(n))
+		if n == "" || seen[n] {
+			continue
+		}
+		if !nameRe.MatchString(n) {
+			return nil, fmt.Errorf("names: %q isn't usable before the slash (letters, digits and '-' only)", n)
+		}
+		seen[n] = true
+		out = append(out, n)
+	}
+	if len(out) == 0 {
+		out = []string{"go"}
+	}
+	return out, nil
+}
+
+// LoadNames returns Names from config.yaml without creating anything, so
+// `sudo goli hosts -apply` never writes files as root. Missing or unreadable
+// config means the default, "go".
+func LoadNames() []string {
+	dir, err := Dir()
+	if err != nil {
+		return []string{"go"}
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "config.yaml"))
+	if err != nil {
+		return []string{"go"}
+	}
+	var c struct {
+		Names []string `yaml:"names"`
+	}
+	if yaml.Unmarshal(data, &c) != nil {
+		return []string{"go"}
+	}
+	names, err := normalizeNames(c.Names)
+	if err != nil {
+		return []string{"go"}
+	}
+	return names
+}
+
+// Name is the word goli shows before the slash: the first of Names.
+func (c *Config) Name() string { return c.Names[0] }
+
+// Hosts is every Host header the server should accept: Names plus Hostnames.
+func (c *Config) Hosts() []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, h := range append(append([]string{}, c.Names...), c.Hostnames...) {
+		h = strings.ToLower(strings.TrimSpace(h))
+		if h != "" && !seen[h] {
+			seen[h] = true
+			out = append(out, h)
+		}
+	}
+	return out
+}
 
 // LinksPath is the resolved path of links.yaml.
 func (c *Config) LinksPath() string {
@@ -142,7 +220,8 @@ func expandHome(p string) string {
 
 const defaultConfigYAML = `# goli configuration. See https://github.com/chetanparab/goli#configuration
 listen: "%s"
-hostnames: [go, localhost, 127.0.0.1]
+names: [go]                 # what you type before the slash; [go, g] gives you g/ too
+hostnames: [localhost, 127.0.0.1]
 
 # links_file: ~/code/goli-links/links.yaml
 
@@ -151,7 +230,7 @@ hostnames: [go, localhost, 127.0.0.1]
 # in hostnames (see 'tailscale status'), not a bare *.ts.net.
 # allow: [tailscale]
 # allow_write: false        # other devices can open and search, not edit
-# hostnames: [go, localhost, 127.0.0.1, "go.tailXXXX.ts.net"]
+# hostnames: [localhost, 127.0.0.1, "go.tailXXXX.ts.net"]
 # keep_awake: true          # don't idle-sleep while plugged in (macOS)
 
 # AI search (go/?words) is off until you turn it on. When on, each search

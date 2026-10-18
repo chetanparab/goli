@@ -21,7 +21,7 @@ const Name = "Windows"
 const DefaultListen = "127.0.0.1:80"
 
 // No ::1 line: a browser trying go over IPv6 would find nothing on [::1]:80.
-var hostsLines = []string{"127.0.0.1\tgo"}
+var hostsAddrs = []string{"127.0.0.1"}
 
 // HostsPath is the system hosts file.
 func HostsPath() string {

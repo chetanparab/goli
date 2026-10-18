@@ -40,7 +40,8 @@ var assets = map[string]string{
 }
 
 var tmpl = template.Must(template.New("").Funcs(template.FuncMap{
-	"pct": func(f float64) int { return int(f*100 + 0.5) },
+	"pct":    func(f float64) int { return int(f*100 + 0.5) },
+	"goName": func() string { return "go" }, // replaced per server with the configured name
 }).ParseFS(webFS, "web/*.html"))
 
 // Limits that keep a hostile page from making the server do expensive work.
@@ -57,6 +58,7 @@ const (
 type Server struct {
 	cfg      *config.Config
 	store    *links.Store
+	tmpl     *template.Template // this server's templates, with goName bound to cfg.Name()
 	detector *ctxinfo.Detector
 	log      *slog.Logger
 	keys     secret.Store
@@ -86,6 +88,7 @@ func New(cfg *config.Config, store *links.Store, log *slog.Logger) *Server {
 		cfg: cfg, store: store, detector: ctxinfo.NewDetector(cfg.Networks), log: log,
 		keys:  cfg.Keys(),
 		aiSem: make(chan struct{}, aiConcurrency), cache: map[string]cachedPicks{},
+		tmpl: template.Must(tmpl.Clone()).Funcs(template.FuncMap{"goName": cfg.Name}),
 	}
 	s.applyAI(cfg.AI)
 	return s
@@ -193,7 +196,7 @@ func (s *Server) handleGo(w http.ResponseWriter, r *http.Request) {
 		form := linkForm{}
 		if key := r.URL.Query().Get("edit"); key != "" && canWrite(r) {
 			if l, ok := s.store.Get(key); ok {
-				form = linkForm{Key: l.Key, URL: l.URL, Desc: l.Desc, Tags: strings.Join(l.Tags, ", "), Editing: true}
+				form = linkForm{Key: l.Key, URL: l.URL, Desc: l.Desc, Tags: strings.Join(l.Tags, ", "), Aliases: strings.Join(l.Aliases, ", "), Editing: true}
 			}
 		}
 		s.render(w, http.StatusOK, "home.html", map[string]any{
@@ -306,8 +309,8 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 
 // linkForm pre-fills the create/edit form.
 type linkForm struct {
-	Key, URL, Desc, Tags string
-	Editing              bool
+	Key, URL, Desc, Tags, Aliases string
+	Editing                       bool
 }
 
 type searchResult struct {
@@ -425,7 +428,7 @@ func confident(rs []searchResult) bool {
 func (s *Server) render(w http.ResponseWriter, status int, name string, data any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
-	if err := tmpl.ExecuteTemplate(w, name, data); err != nil {
+	if err := s.tmpl.ExecuteTemplate(w, name, data); err != nil {
 		s.log.Error("render", "template", name, "err", err)
 	}
 }
@@ -435,10 +438,11 @@ func (s *Server) render(w http.ResponseWriter, status int, name string, data any
 func (s *Server) formPut(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxFormBytes)
 	l := &links.Link{
-		Key:  r.FormValue("key"),
-		URL:  strings.TrimSpace(r.FormValue("url")),
-		Desc: strings.TrimSpace(r.FormValue("desc")),
-		Tags: splitTags(r.FormValue("tags")),
+		Key:     r.FormValue("key"),
+		URL:     strings.TrimSpace(r.FormValue("url")),
+		Desc:    strings.TrimSpace(r.FormValue("desc")),
+		Tags:    splitTags(r.FormValue("tags")),
+		Aliases: splitTags(r.FormValue("aliases")),
 	}
 	if r.FormValue("mode") == "edit" {
 		// The edit form shows every field, so an empty one means "cleared";
@@ -471,6 +475,9 @@ func (s *Server) mergeExisting(l *links.Link) {
 	}
 	if len(l.Variants) == 0 {
 		l.Variants = old.Variants
+	}
+	if len(l.Aliases) == 0 {
+		l.Aliases = old.Aliases
 	}
 }
 

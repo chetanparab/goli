@@ -9,9 +9,17 @@ import (
 	"strings"
 )
 
-// HostsLines are the entries that make the name "go" mean this machine.
-// Windows gets only the IPv4 line because goli listens on 127.0.0.1 there.
-var HostsLines = hostsLines
+// HostsLines are the hosts-file entries that make each name mean this
+// machine. Windows gets only the IPv4 line because goli listens on 127.0.0.1 there.
+func HostsLines(names []string) []string {
+	var out []string
+	for _, addr := range hostsAddrs {
+		for _, n := range names {
+			out = append(out, addr+"\t"+n)
+		}
+	}
+	return out
+}
 
 // HostsHas reports whether hosts content already maps line's name to its address.
 func HostsHas(hosts, line string) bool {

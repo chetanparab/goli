@@ -54,7 +54,7 @@ func (s *Server) guard(next http.Handler) http.Handler {
 	if err != nil {
 		s.log.Error("ignoring allow setting", "err", err)
 	}
-	hosts := newHostMatcher(s.cfg.Hostnames)
+	hosts := newHostMatcher(s.cfg.Hosts())
 	cop := http.NewCrossOriginProtection()
 	inner := cop.Handler(next)
 

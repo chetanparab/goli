@@ -102,6 +102,7 @@ budget:                                                <span class="c"># full fo
   url: https://docs.google.com/spreadsheets/d/1xQ7…/edit
   desc: Household budget, updated monthly              <span class="c"># helps search</span>
   tags: [home, money]
+  aliases: [money, spend]                              <span class="c"># go/money works too</span>
 pr: https://github.com/acme/app/pull/{1}               <span class="c"># go/pr/482</span>
 flight: https://www.flightradar24.com/data/flights/{1} <span class="c"># go/flight/6E-2134</span>
 gh: https://github.com/acme                            <span class="c"># + extra path</span>
@@ -170,7 +171,8 @@ dashboard:                                             <span class="c"># context
     <section class="section" id="faq" aria-labelledby="faq-h">
       <div class="section-head"><span class="num">viii.</span><h2 class="title" id="faq-h">Questions</h2></div>
       <div class="body">
-        <details><summary>Will it clash with my company's go/ links?</summary><p>On a work laptop where <code>go</code> already points to a company server, goli's hosts entry would take over. Use another name there — goli answers to any hostname you list in <code>hostnames</code>.</p></details>
+        <details><summary>Will it clash with my company's go/ links?</summary><p>No need for it to. <code>go</code> is only the default: set <code>names: [g]</code> (or <code>[my, go]</code> — any words you like) in <code>config.yaml</code>, run <code>goli hosts</code> again, and your links answer to <code>g/standup</code> while the company's <code>go/</code> stays untouched.</p></details>
+        <details><summary>Can one link have several names?</summary><p>Yes. Give it <code>aliases: [daily, scrum]</code> in the links file, or <code>goli add standup &lt;url&gt; -a daily,scrum</code>, and all three names open it. Aliases count in search too.</p></details>
         <details><summary>Does it work while my computer sleeps?</summary><p>Your computer has to be awake to answer. <code>keep_awake: true</code> stops idle sleep while goli runs (on a Mac, while it's plugged in).</p></details>
         <details><summary>Does it work on Windows?</summary><p>Yes — macOS, Windows and Linux, on Intel and ARM. Phones (iPhone and Android) connect through Tailscale.</p></details>
         <details><summary>Why “goli”?</summary><p>Go links → goli. And yes, the Hindi pun is intended: <em>goli dena</em> means giving someone the slip — goli gets you past long URLs.</p></details>

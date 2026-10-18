@@ -46,7 +46,11 @@ func Rank(q string, all []*links.Link, n int) []Result {
 
 // Score rates how well a lowercase query matches a link, from 0 to 1.
 func Score(q string, l *links.Link) float64 {
-	return min(1, max(keyScore(q, l.Key), 0.85*textScore(q, l))+0.05*hostScore(q, l.URL))
+	best := keyScore(q, l.Key)
+	for _, a := range l.Aliases {
+		best = max(best, keyScore(q, a))
+	}
+	return min(1, max(best, 0.85*textScore(q, l))+0.05*hostScore(q, l.URL))
 }
 
 // hostScore is the fraction of query words that appear in the URL's host,
@@ -96,7 +100,7 @@ func textScore(q string, l *links.Link) float64 {
 	if len(words) == 0 {
 		return 0
 	}
-	hay := strings.ToLower(strings.Join([]string{l.Key, l.Desc, strings.Join(l.Tags, " "), hostAndPath(l.URL)}, " "))
+	hay := strings.ToLower(strings.Join([]string{l.Key, strings.Join(l.Aliases, " "), l.Desc, strings.Join(l.Tags, " "), hostAndPath(l.URL)}, " "))
 	hayWords := tokens(hay)
 	hit := 0.0
 	for _, w := range words {

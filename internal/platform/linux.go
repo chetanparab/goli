@@ -20,7 +20,7 @@ const Name = "Linux"
 // non-local clients. Binding needs `setcap cap_net_bind_service=+ep`.
 const DefaultListen = ":80"
 
-var hostsLines = []string{"127.0.0.1\tgo", "::1\tgo"}
+var hostsAddrs = []string{"127.0.0.1", "::1"}
 
 // OpenURL opens u in the default browser.
 func OpenURL(u string) error { return exec.Command("xdg-open", u).Run() }

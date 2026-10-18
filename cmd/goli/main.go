@@ -113,7 +113,7 @@ func run(args []string) error {
 	case "serve":
 		return cmdServe(cfg, store, rest)
 	case "add":
-		return cmdAdd(store, rest)
+		return cmdAdd(cfg, store, rest)
 	case "rm", "delete":
 		if len(rest) != 1 {
 			return errors.New("usage: goli rm <key>")
@@ -235,7 +235,7 @@ func cmdOpen(cfg *config.Config, store *links.Store, args []string) error {
 	path := strings.Join(args, "/")
 	res, err := store.Resolve(path, nil, currentContext(cfg))
 	if errors.Is(err, links.ErrNotFound) {
-		fmt.Fprintf(os.Stderr, "go/%s doesn't exist.\n", links.NormalizeKey(path))
+		fmt.Fprintf(os.Stderr, "%s/%s doesn't exist.\n", cfg.Name(), links.NormalizeKey(path))
 		if sug := match.Rank(strings.ReplaceAll(path, "/", " "), store.All(), 5); len(sug) > 0 {
 			fmt.Fprintln(os.Stderr, "Did you mean:")
 			for _, s := range sug {
@@ -252,10 +252,11 @@ func cmdOpen(cfg *config.Config, store *links.Store, args []string) error {
 	return platform.OpenURL(res.URL)
 }
 
-func cmdAdd(store *links.Store, args []string) error {
+func cmdAdd(cfg *config.Config, store *links.Store, args []string) error {
 	fs := flag.NewFlagSet("add", flag.ContinueOnError)
 	desc := fs.String("d", "", "description")
 	tags := fs.String("t", "", "comma-separated tags")
+	aliases := fs.String("a", "", "comma-separated other names that open this link")
 	// Allow flags after positional args: goli add key url -d "..."
 	var pos []string
 	for len(args) > 0 {
@@ -269,14 +270,9 @@ func cmdAdd(store *links.Store, args []string) error {
 		args = fs.Args()[1:]
 	}
 	if len(pos) != 2 {
-		return errors.New(`usage: goli add <key> <url> [-d "description"] [-t tag1,tag2]`)
+		return errors.New(`usage: goli add <key> <url> [-d "description"] [-t tag1,tag2] [-a alias1,alias2]`)
 	}
-	l := &links.Link{Key: pos[0], URL: pos[1], Desc: *desc}
-	if *tags != "" {
-		for _, t := range strings.Split(*tags, ",") {
-			l.Tags = append(l.Tags, strings.TrimSpace(strings.ToLower(t)))
-		}
-	}
+	l := &links.Link{Key: pos[0], URL: pos[1], Desc: *desc, Tags: splitList(*tags), Aliases: splitList(*aliases)}
 	if old, ok := store.Get(l.Key); ok {
 		l.Variants = old.Variants // keep hand-written variants on update
 		if l.Desc == "" {
@@ -285,15 +281,32 @@ func cmdAdd(store *links.Store, args []string) error {
 		if l.Tags == nil {
 			l.Tags = old.Tags
 		}
+		if l.Aliases == nil {
+			l.Aliases = old.Aliases
+		}
 	}
 	if err := store.Put(l); err != nil {
 		return err
 	}
-	fmt.Printf("go/%s → %s\n", l.Key, l.URL)
+	fmt.Printf("%s/%s → %s\n", cfg.Name(), l.Key, l.URL)
+	for _, a := range l.Aliases {
+		fmt.Printf("%s/%s → same\n", cfg.Name(), a)
+	}
 	if subcommands[l.Key] {
 		fmt.Fprintf(os.Stderr, "note: %q is also a goli command; open it with `goli open %s`\n", l.Key, l.Key)
 	}
 	return nil
+}
+
+// splitList turns "a, B" into ["a", "b"]; empty input gives nil.
+func splitList(s string) []string {
+	var out []string
+	for _, t := range strings.Split(s, ",") {
+		if t = strings.TrimSpace(strings.ToLower(t)); t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
 }
 
 func cmdList(store *links.Store, args []string) error {
@@ -301,11 +314,15 @@ func cmdList(store *links.Store, args []string) error {
 	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	n := 0
 	for _, l := range store.All() {
-		hay := strings.ToLower(l.Key + " " + l.URL + " " + l.Desc + " " + strings.Join(l.Tags, " "))
+		hay := strings.ToLower(l.Key + " " + strings.Join(l.Aliases, " ") + " " + l.URL + " " + l.Desc + " " + strings.Join(l.Tags, " "))
 		if filter != "" && !strings.Contains(hay, filter) {
 			continue
 		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", l.Key, l.URL, l.Desc)
+		name := l.Key
+		if len(l.Aliases) > 0 {
+			name += " (" + strings.Join(l.Aliases, ", ") + ")"
+		}
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", name, l.URL, l.Desc)
 		n++
 	}
 	tw.Flush()
@@ -450,20 +467,21 @@ func cmdHosts(args []string) error {
 	if err != nil {
 		return err
 	}
+	names := config.LoadNames()
 	var missing []string
-	for _, l := range platform.HostsLines {
+	for _, l := range platform.HostsLines(names) {
 		if !platform.HostsHas(string(data), l) {
 			missing = append(missing, l)
 		}
 	}
 	if len(missing) == 0 {
-		fmt.Println("the hosts file already maps go → this machine")
+		fmt.Printf("the hosts file already maps %s → this machine\n", strings.Join(names, ", "))
 		return nil
 	}
 	if !*apply {
 		// Recommend a command that doesn't run goli itself with admin rights:
 		// the goli binary is usually user-writable.
-		fmt.Printf("Add go to %s (needs admin rights):\n  %s\n", path, platform.HostsInstructions(missing))
+		fmt.Printf("Add %s to %s (needs admin rights):\n  %s\n", strings.Join(names, ", "), path, platform.HostsInstructions(missing))
 		return nil
 	}
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
@@ -498,7 +516,9 @@ func cmdDoctor(cfg *config.Config, store *links.Store) error {
 	ok(true, fmt.Sprintf("%d links in %s", len(store.All()), store.Path()), "")
 
 	hosts, _ := os.ReadFile(platform.HostsPath())
-	ok(platform.HostsHas(string(hosts), platform.HostsLines[0]), "hosts file maps go → 127.0.0.1", "goli hosts   (prints the command to run)")
+	for _, n := range cfg.Names {
+		ok(platform.HostsHas(string(hosts), "127.0.0.1\t"+n), "hosts file maps "+n+" → 127.0.0.1", "goli hosts   (prints the command to run)")
+	}
 	ok(platform.ServiceInstalled(), "server starts at login ("+platform.Name+")", "goli install")
 
 	port := "80"
@@ -506,7 +526,7 @@ func cmdDoctor(cfg *config.Config, store *links.Store) error {
 		port = cfg.Listen[i+1:]
 	}
 	req, _ := http.NewRequest("GET", "http://127.0.0.1:"+port+"/_/health", nil)
-	req.Host = "go"
+	req.Host = cfg.Name()
 	client := &http.Client{Timeout: 2 * time.Second}
 	resp, err := client.Do(req)
 	up := err == nil && resp.StatusCode == 200

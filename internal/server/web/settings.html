@@ -1,6 +1,6 @@
 {{template "head" "AI search"}}
 <h1>AI search</h1>
-<p class="muted" style="margin:-4px 0 20px">Lets <code>go/?words</code> find a link by what it's about, not just its name. Pick how it's powered — you can change this any time.</p>
+<p class="muted" style="margin:-4px 0 20px">Lets <code>{{goName}}/?words</code> find a link by what it's about, not just its name. Pick how it's powered — you can change this any time.</p>
 
 {{with .Notice}}<div class="notice{{if not .OK}} warn{{end}}" role="status">{{.Text}}</div>{{end}}
 

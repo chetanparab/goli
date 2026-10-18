@@ -460,3 +460,34 @@ func TestSettingsConcurrentWithRequests(t *testing.T) {
 		t.Errorf("empty choice should be rejected, got %d", w.Code)
 	}
 }
+
+// A custom name before the slash is accepted as a Host and shown in pages;
+// an alias redirects like the link itself and is listed next to it.
+func TestCustomNameAndAliases(t *testing.T) {
+	s, store := newServer(t)
+	s.cfg.Names = []string{"g", "go"}
+	s = New(s.cfg, store, s.log)
+	store.Put(&links.Link{Key: "standup", URL: "https://meet.example.com/abc", Aliases: []string{"daily"}})
+	h := s.Handler()
+	for _, host := range []string{"g", "go"} {
+		if w := do(h, "GET", "/daily", nil, func(r *http.Request) { r.Host = host }); w.Code != http.StatusFound || w.Header().Get("Location") != "https://meet.example.com/abc" {
+			t.Errorf("host %s alias: %d %s", host, w.Code, w.Header().Get("Location"))
+		}
+	}
+	if w := do(h, "GET", "/standup", nil, func(r *http.Request) { r.Host = "gone" }); w.Code != http.StatusMisdirectedRequest {
+		t.Errorf("unlisted host accepted: %d", w.Code)
+	}
+	body := do(h, "GET", "/", nil, nil).Body.String()
+	if !strings.Contains(body, `class="alias" href="/daily"`) || !strings.Contains(body, "g/pr/123") {
+		t.Errorf("home page should list the alias and use the first name:\n%s", body)
+	}
+	body = do(h, "GET", "/?edit=standup", nil, nil).Body.String()
+	if !strings.Contains(body, "Edit g/standup") || !strings.Contains(body, `name="aliases" value="daily"`) {
+		t.Errorf("edit form missing name or aliases:\n%s", body)
+	}
+	form := url.Values{"key": {"standup"}, "url": {"https://meet.example.com/abc"}, "aliases": {"daily, scrum"}}.Encode()
+	do(h, "POST", "/_/links", strings.NewReader(form), func(r *http.Request) { r.Header.Set("Content-Type", "application/x-www-form-urlencoded") })
+	if l, ok := store.Get("scrum"); !ok || l.Key != "standup" {
+		t.Errorf("alias saved from the form: %v %v", l, ok)
+	}
+}
