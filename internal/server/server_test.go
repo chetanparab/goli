@@ -523,3 +523,34 @@ func TestShareTargetAndUsage(t *testing.T) {
 		t.Error("usage kept after delete")
 	}
 }
+
+// Browsers without Sec-Fetch-Site must still be able to post from goli's own
+// page, and "Origin: null" (which a no-referrer policy would cause) stays refused.
+func TestWritesFromOldBrowsers(t *testing.T) {
+	s, _ := newServer(t)
+	h := s.Handler()
+	post := func(origin string) *httptest.ResponseRecorder {
+		return do(h, "POST", "/_/links/delete", strings.NewReader("key=zz-none"), func(r *http.Request) {
+			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			r.Header.Del("Sec-Fetch-Site")
+			if origin != "" {
+				r.Header.Set("Origin", origin)
+			}
+		})
+	}
+	if w := do(h, "GET", "/", nil, nil); w.Header().Get("Referrer-Policy") != "same-origin" {
+		t.Errorf("Referrer-Policy = %q, want same-origin (no-referrer makes form posts send Origin: null)", w.Header().Get("Referrer-Policy"))
+	}
+	// Our own names are trusted even when they don't equal the Host header.
+	for _, origin := range []string{"http://go", "http://localhost", "http://127.0.0.1"} {
+		if w := post(origin); w.Code == http.StatusForbidden {
+			t.Errorf("Origin %s refused: %s", origin, w.Body)
+		}
+	}
+	for _, origin := range []string{"null", "http://localhost:3000", "https://evil.example.com"} {
+		w := post(origin)
+		if w.Code != http.StatusForbidden || !strings.Contains(w.Body.String(), "didn't show it came from goli's own page") {
+			t.Errorf("Origin %s: %d %s", origin, w.Code, w.Body)
+		}
+	}
+}

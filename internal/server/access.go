@@ -56,11 +56,36 @@ func (s *Server) guard(next http.Handler) http.Handler {
 	}
 	hosts := newHostMatcher(s.cfg.Hosts())
 	cop := http.NewCrossOriginProtection()
+	// Our own names are trusted origins, so a browser that lacks Sec-Fetch-Site
+	// still gets through when its Origin is one of goli's addresses (even if a
+	// proxy rewrote the Host header on the way in). Wildcards can't be origins.
+	for _, h := range s.cfg.Hosts() {
+		if strings.HasPrefix(h, "*.") {
+			continue
+		}
+		_ = cop.AddTrustedOrigin("http://" + h)
+		if port := listenPort(s.cfg.Listen); port != "" && port != "80" {
+			_ = cop.AddTrustedOrigin("http://" + h + ":" + port)
+		}
+	}
+	cop.SetDenyHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Logged so a user can report which browser it was; no destination URLs here.
+		s.log.Warn("refused a write that didn't come from goli's own page",
+			"sec_fetch_site", r.Header.Get("Sec-Fetch-Site"), "origin", r.Header.Get("Origin"),
+			"host", r.Host, "user_agent", r.UserAgent())
+		http.Error(w, "goli refused this request because the browser didn't show it came from goli's own page "+
+			"(Sec-Fetch-Site: "+orDash(r.Header.Get("Sec-Fetch-Site"))+", Origin: "+orDash(r.Header.Get("Origin"))+", Host: "+r.Host+").\n"+
+			"If you're using goli's own page, your browser may be out of date; otherwise please report this at "+
+			"https://github.com/chetanparab/goli/issues with the browser you used.", http.StatusForbidden)
+	}))
 	inner := cop.Handler(next)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("Referrer-Policy", "no-referrer")
+		// same-origin, not no-referrer: no-referrer makes browsers send
+		// "Origin: null" on form posts, which the cross-origin check must refuse.
+		// Destinations still never see a referrer (they're cross-origin).
+		w.Header().Set("Referrer-Policy", "same-origin")
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("Content-Security-Policy", csp)
 
@@ -102,6 +127,21 @@ func proxied(r *http.Request) bool {
 		}
 	}
 	return false
+}
+
+func orDash(s string) string {
+	if s == "" {
+		return "-"
+	}
+	return s
+}
+
+// listenPort is the port part of a listen address (":80" → "80").
+func listenPort(listen string) string {
+	if i := strings.LastIndex(listen, ":"); i >= 0 {
+		return listen[i+1:]
+	}
+	return ""
 }
 
 func addrIP(hostport string) net.IP {
